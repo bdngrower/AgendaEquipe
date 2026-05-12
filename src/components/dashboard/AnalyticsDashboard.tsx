@@ -103,12 +103,28 @@ export function AnalyticsDashboard() {
     if (!element) return;
     
     setIsExporting(true);
+    
+    // Forçar estilos compatíveis antes da captura
+    const originalStyle = element.style.cssText;
+    element.style.width = '1000px'; // Largura fixa para renderização consistente
+    element.style.backgroundColor = '#ffffff';
+    
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('analytics-content');
+          if (el) {
+            el.style.width = '1000px';
+            el.style.padding = '40px';
+            // Remover gradientes oklch no clone
+            const aiCard = el.querySelector('.ai-card');
+            if (aiCard) (aiCard as HTMLElement).style.background = '#2563eb';
+          }
+        }
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -120,7 +136,9 @@ export function AnalyticsDashboard() {
       pdf.save(`relatorio-visitas-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error("Export Error:", error);
+      alert("Erro ao gerar PDF. Tente novamente.");
     } finally {
+      element.style.cssText = originalStyle;
       setIsExporting(false);
     }
   };
@@ -144,9 +162,9 @@ export function AnalyticsDashboard() {
         </Button>
       </div>
 
-      <div id="analytics-content" className="space-y-6" style={{ backgroundColor: '#ffffff', color: '#18181b' }}>
+      <div id="analytics-content" className="space-y-6" style={{ backgroundColor: '#ffffff', color: '#18181b', minWidth: isExporting ? '1000px' : 'auto' }}>
         {/* Insights AI */}
-        <div className="p-6 rounded-3xl text-white shadow-xl overflow-hidden relative" style={{ background: 'linear-gradient(to bottom right, #2563eb, #4338ca)' }}>
+        <div className="ai-card p-6 rounded-3xl text-white shadow-xl overflow-hidden relative" style={{ background: '#2563eb' }}>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Sparkles className="h-24 w-24 rotate-12" />
           </div>
