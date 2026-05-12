@@ -19,9 +19,18 @@ export interface Reminder {
   createdAt: string;
 }
 
+export interface Company {
+  id: string;
+  name: string;
+  address?: string;
+  contact?: string;
+  createdAt: string;
+}
+
 export interface Visit {
   id: string;
   customerName: string;
+  companyId?: string;
   address?: string;
   date: string; // ISO format YYYY-MM-DD
   time: string; // HH:mm
@@ -34,6 +43,7 @@ export interface Visit {
 
 export interface AppData {
   users: User[];
+  companies: Company[];
   reminders: Reminder[];
   visits: Visit[];
   currentUser: User | null;

@@ -8,10 +8,11 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   className?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, className }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -33,19 +34,24 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
       />
       <div 
         className={cn(
-          "relative w-full max-w-lg rounded-2xl bg-white dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border p-6 shadow-2xl transition-all scale-100",
+          "relative flex flex-col w-full max-w-lg rounded-2xl bg-white dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-2xl transition-all scale-100 max-h-[90vh]",
           className
         )}
       >
-        <div className="mb-5 flex items-center justify-between">
+        <div className="p-6 pb-0 flex items-center justify-between">
           <h2 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h2>
           <Button variant="ghost" size="icon" onClick={onClose} className="-mr-2 rounded-full hover:bg-zinc-100 dark:hover:bg-dark-surface-hover">
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <div className="max-h-[80vh] overflow-y-auto pr-2">
+        <div className="flex-1 overflow-y-auto p-6 pt-5">
           {children}
         </div>
+        {footer && (
+          <div className="p-6 pt-0 border-t border-zinc-100 dark:border-dark-border mt-auto">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

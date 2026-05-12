@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { AppData, Reminder, User, Visit } from '../types';
+import { AppData, Reminder, User, Visit, Company } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { auth, db } from '../lib/firebase';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
@@ -11,7 +11,8 @@ import {
   deleteDoc, 
   onSnapshot, 
   getDoc,
-  query
+  query,
+  orderBy
 } from 'firebase/firestore';
 
 interface AppContextType extends AppData {
@@ -22,6 +23,7 @@ interface AppContextType extends AppData {
   updateVisit: (id: string, updates: Partial<Visit>) => void;
   deleteVisit: (id: string) => void;
   moveVisit: (id: string, newDate: string) => void;
+  addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => Promise<string>;
   authReady: boolean;
 }
 
@@ -77,6 +79,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppData>({
     users: [],
+    companies: [],
     reminders: [],
     visits: [],
     currentUser: null,
@@ -153,6 +156,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setData(prev => ({ ...prev, users }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
+    const unsubCompanies = onSnapshot(query(collection(db, 'companies'), orderBy('name')), (snapshot) => {
+      const companies = snapshot.docs.map(doc => doc.data() as Company);
+      setData(prev => ({ ...prev, companies }));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'companies'));
+
     const unsubReminders = onSnapshot(query(collection(db, 'reminders')), async (snapshot) => {
       const reminders = snapshot.docs.map(doc => doc.data() as Reminder);
       setData(prev => ({ ...prev, reminders }));
@@ -161,6 +169,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         seeded.current = true;
         
         try {
+          const companyId1 = uuidv4();
+          await setDoc(doc(db, 'companies', companyId1), {
+            id: companyId1,
+            name: 'Empresa Alpha',
+            contact: '(11) 99999-9999',
+            createdAt: new Date().toISOString()
+          });
+
           const reminderId1 = uuidv4();
           await setDoc(doc(db, 'reminders', reminderId1), {
             id: reminderId1,
@@ -178,7 +194,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           await setDoc(doc(db, 'visits', visitId1), {
             id: visitId1,
             customerName: 'Empresa Alpha',
-            address: 'Rua Principal, 123',
+            companyId: companyId1,
             date: new Date().toISOString().split('T')[0],
             time: '14:00',
             status: 'Pendente',
@@ -200,6 +216,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       unsubUsers();
+      unsubCompanies();
       unsubReminders();
       unsubVisits();
     };
@@ -269,6 +286,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateVisit(id, { date: newDate });
   };
 
+  const addCompany = async (company: Omit<Company, 'id' | 'createdAt'>): Promise<string> => {
+    const id = uuidv4();
+    const newCompany: Company = {
+      ...company,
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      await setDoc(doc(db, 'companies', id), newCompany);
+      return id;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `companies/${id}`);
+      return id;
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -280,6 +313,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateVisit,
         deleteVisit,
         moveVisit,
+        addCompany,
         authReady,
       }}
     >
