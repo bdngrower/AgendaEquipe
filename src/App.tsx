@@ -31,13 +31,15 @@ function MainLayout() {
     setTheme(t => t === 'light' ? 'dark' : 'light');
   };
 
-  if (!authReady || !currentUser) {
+  if (!authReady) {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg font-sans">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
+
+  const user = currentUser || { id: 'local', name: 'Equipe', email: 'vendas@equipe.com' };
 
   return (
     <div className="flex h-screen bg-zinc-50 dark:bg-dark-bg overflow-hidden font-sans">
@@ -80,11 +82,11 @@ function MainLayout() {
                <div className="flex items-center justify-between w-full">
                  <div className="flex items-center gap-3">
                    <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-dark-surface-hover flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold border border-blue-200 dark:border-dark-border shadow-sm">
-                     {currentUser.name.charAt(0).toUpperCase()}
+                     {user.name.charAt(0).toUpperCase()}
                    </div>
                    <div className="flex flex-col max-w-[120px]">
-                     <span className="text-sm font-semibold tracking-tight leading-tight text-zinc-900 dark:text-zinc-200 truncate">{currentUser.name}</span>
-                     <span className="text-xs text-zinc-500 dark:text-zinc-500 font-medium leading-tight truncate">{currentUser.email}</span>
+                     <span className="text-sm font-semibold tracking-tight leading-tight text-zinc-900 dark:text-zinc-200 truncate">{user.name}</span>
+                     <span className="text-xs text-zinc-500 dark:text-zinc-500 font-medium leading-tight truncate">{user.email}</span>
                    </div>
                  </div>
                  <div className="flex gap-1">
@@ -93,6 +95,11 @@ function MainLayout() {
                    </Button>
                  </div>
                </div>
+               {currentUser?.id === 'guest' && (
+                 <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2 rounded border border-amber-200 dark:border-amber-800">
+                   Aviso: Logon anônimo desativado no Firebase. Sincronização limitada.
+                 </p>
+               )}
            </div>
         </div>
 

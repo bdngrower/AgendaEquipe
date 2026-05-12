@@ -88,8 +88,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const initAuth = async () => {
       try {
         await signInAnonymously(auth);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Anonymous auth failed", err);
+        // Fallback for when Anonymous Auth is not enabled in Firebase Console
+        if (err.code === 'auth/admin-restricted-operation') {
+          console.warn("Please enable Anonymous Auth in Firebase Console to persist data.");
+          const guestUser: User = {
+            id: 'guest',
+            name: 'Usuário Local (Offline)',
+            email: 'equipe@agenda.com',
+            createdAt: new Date().toISOString()
+          };
+          setData(prev => ({ ...prev, currentUser: guestUser }));
+          setAuthReady(true);
+        }
       }
     };
     initAuth();
@@ -117,14 +129,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
         }
+        setAuthReady(true);
       } else {
-        setData(prev => ({ ...prev, currentUser: null }));
+        // If not signed in and not already handled by catch block
+        if (!authReady) {
+          // set authReady true but keep currentUser null unless catch handled it
+          setAuthReady(true);
+        }
       }
-      setAuthReady(true);
     });
 
     return () => unsubscribeAuth();
-  }, []);
+  }, [authReady]);
 
   useEffect(() => {
     if (!data.currentUser) {
