@@ -6,7 +6,6 @@ import {
 } from 'recharts';
 import { Button } from '../ui';
 import { Trophy, TrendingUp, Calendar, Download, Sparkles, FileText, Loader2 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -65,7 +64,6 @@ export function AnalyticsDashboard() {
     if (loadingInsights || visits.length === 0) return;
     setLoadingInsights(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const dataSummary = `
         Total visits: ${visits.length}
         Top customers: ${topCompaniesData.map(c => `${c.name} (${c.value} visits)`).join(', ')}
@@ -76,14 +74,19 @@ export function AnalyticsDashboard() {
         }, {})}
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Analyze these business visit logistics data and provide 3 short, punchy insights in Portuguese about business performance, identifying trends or areas for improvement. Data: ${dataSummary}`,
+      const response = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataSummary })
       });
-      setInsights(response.text || 'Não foi possível gerar insights no momento.');
+
+      if (!response.ok) throw new Error('API server error');
+      
+      const data = await response.json();
+      setInsights(data.insights || 'Não foi possível gerar insights no momento.');
     } catch (error) {
       console.error("AI Insights Error:", error);
-      setInsights('Erro ao conectar com a inteligência artificial.');
+      setInsights('Erro ao conectar com o servidor de inteligência artificial.');
     } finally {
       setLoadingInsights(false);
     }
@@ -141,9 +144,9 @@ export function AnalyticsDashboard() {
         </Button>
       </div>
 
-      <div id="analytics-content" className="space-y-6">
+      <div id="analytics-content" className="space-y-6" style={{ backgroundColor: '#ffffff', color: '#18181b' }}>
         {/* Insights AI */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl text-white shadow-xl shadow-blue-500/10 overflow-hidden relative">
+        <div className="p-6 rounded-3xl text-white shadow-xl overflow-hidden relative" style={{ background: 'linear-gradient(to bottom right, #2563eb, #4338ca)' }}>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Sparkles className="h-24 w-24 rotate-12" />
           </div>
@@ -177,12 +180,12 @@ export function AnalyticsDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Empresas */}
-          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm">
+          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+              <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg" style={{ backgroundColor: '#fffbeb' }}>
                 <Trophy className="h-5 w-5 text-amber-500" />
               </div>
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Top Clientes</h3>
+              <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Top Clientes</h3>
             </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -215,12 +218,12 @@ export function AnalyticsDashboard() {
           </div>
 
           {/* Agendamentos Mensais */}
-          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm">
+          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg" style={{ backgroundColor: '#eff6ff' }}>
                 <TrendingUp className="h-5 w-5 text-blue-500" />
               </div>
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Crescimento Mensal</h3>
+              <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Crescimento Mensal</h3>
             </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -259,12 +262,12 @@ export function AnalyticsDashboard() {
         </div>
 
         {/* Visão Semanal */}
-        <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm">
+        <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
           <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+            <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg" style={{ backgroundColor: '#faf5ff' }}>
               <Calendar className="h-5 w-5 text-purple-500" />
             </div>
-            <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Consistência Semanal</h3>
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Consistência Semanal</h3>
           </div>
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
