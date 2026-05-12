@@ -8,12 +8,14 @@ import { AppProvider, useAppStore } from './store/useAppStore';
 import { WeeklyBoard } from './components/board/WeeklyBoard';
 import { ReminderList } from './components/reminders/ReminderList';
 import { Summary } from './components/dashboard/Summary';
-import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnalyticsDashboard } from './components/dashboard/AnalyticsDashboard';
+import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun, ChevronLeft, ChevronRight, LayoutDashboard, ListTodo } from 'lucide-react';
 import { Button } from './components/ui';
 
 function MainLayout() {
   const { currentUser, authReady } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'agenda' | 'reports'>('agenda');
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
@@ -101,6 +103,31 @@ function MainLayout() {
              </div>
            </div>
            
+           <div className="px-3 py-4 space-y-1">
+             <button
+               onClick={() => { setActiveTab('agenda'); setSidebarOpen(false); }}
+               className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 ${
+                 activeTab === 'agenda' 
+                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' 
+                   : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface-hover'
+               }`}
+             >
+               <ListTodo className="h-5 w-5" />
+               <span>Agenda</span>
+             </button>
+             <button
+               onClick={() => { setActiveTab('reports'); setSidebarOpen(false); }}
+               className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 ${
+                 activeTab === 'reports' 
+                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' 
+                   : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface-hover'
+               }`}
+             >
+               <LayoutDashboard className="h-5 w-5" />
+               <span>Relatórios</span>
+             </button>
+           </div>
+
            <div className="flex-1 overflow-hidden">
              <ReminderList />
            </div>
@@ -123,12 +150,26 @@ function MainLayout() {
 
         {/* Right column: Dashboard and Weekly Board */}
         <div className="flex-1 flex flex-col h-full overflow-hidden custom-scrollbar bg-zinc-50/50 dark:bg-dark-bg border-l border-transparent transition-colors duration-200">
-           <div className="pt-16 lg:pt-8 pb-2 px-2">
-             <Summary />
-           </div>
-           <div className="flex-1 overflow-hidden pb-4 px-2">
-             <WeeklyBoard />
-           </div>
+           {activeTab === 'agenda' ? (
+             <>
+               <div className="pt-16 lg:pt-8 pb-2 px-2">
+                 <Summary />
+               </div>
+               <div className="flex-1 overflow-hidden pb-4 px-2">
+                 <WeeklyBoard />
+               </div>
+             </>
+           ) : (
+             <div className="flex-1 overflow-y-auto p-4 lg:p-8 pt-16 lg:pt-8">
+               <div className="max-w-6xl mx-auto space-y-8">
+                 <div>
+                   <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Painel de Relatórios</h1>
+                   <p className="text-zinc-500 dark:text-zinc-400">Análise de desempenho e agendamentos</p>
+                 </div>
+                 <AnalyticsDashboard />
+               </div>
+             </div>
+           )}
         </div>
       </div>
     </div>

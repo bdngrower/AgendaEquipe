@@ -20,6 +20,8 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [isNewCompany, setIsNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
   useEffect(() => {
     if (visit) {
@@ -37,6 +39,7 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
       setIsNewCompany(false);
     }
     setNewCompanyName('');
+    setRegisterSuccess(false);
     setShowConfirmDelete(false);
   }, [visit, defaultDate, isOpen]);
 
@@ -46,6 +49,7 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
     if (name === 'companyId') {
       if (value === 'new') {
         setIsNewCompany(true);
+        setRegisterSuccess(false);
         setFormData(prev => ({ ...prev, companyId: '', customerName: '' }));
       } else {
         setIsNewCompany(false);
@@ -63,20 +67,32 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
   };
 
   const handleSaveNewCompany = async () => {
-    if (!newCompanyName.trim()) return;
+    if (!newCompanyName.trim() || isRegistering) return;
     
-    const newId = await addCompany({
-      name: newCompanyName.trim(),
-      contact: formData.contact || ''
-    });
+    setIsRegistering(true);
+    try {
+      const newId = await addCompany({
+        name: newCompanyName.trim(),
+        contact: formData.contact || ''
+      });
 
-    setFormData(prev => ({ 
-      ...prev, 
-      companyId: newId, 
-      customerName: newCompanyName.trim() 
-    }));
-    setIsNewCompany(false);
-    setNewCompanyName('');
+      setFormData(prev => ({ 
+        ...prev, 
+        companyId: newId, 
+        customerName: newCompanyName.trim() 
+      }));
+      
+      setRegisterSuccess(true);
+      setTimeout(() => {
+        setIsNewCompany(false);
+        setNewCompanyName('');
+        setIsRegistering(false);
+        setRegisterSuccess(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Error registering company", error);
+      setIsRegistering(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,30 +159,39 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
 
         {isNewCompany && (
           <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Nome da Nova Empresa</label>
-                <Input 
-                  required 
-                  value={newCompanyName} 
-                  onChange={(e) => setNewCompanyName(e.target.value)} 
-                  placeholder="Ex: Empresa Ltda"
-                  className="border-blue-200 dark:border-blue-800 focus:ring-blue-500"
-                />
+            {registerSuccess ? (
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium py-2">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                Empresa cadastrada com sucesso!
               </div>
-              <Button 
-                type="button" 
-                onClick={handleSaveNewCompany}
-                disabled={!newCompanyName.trim()}
-                variant="primary"
-                className="h-10 px-4"
-              >
-                Cadastrar
-              </Button>
-            </div>
-            <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70">
-              * Clique em "Cadastrar" para salvar a empresa permanentemente antes de continuar.
-            </p>
+            ) : (
+              <>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">Nome da Nova Empresa</label>
+                    <Input 
+                      required 
+                      value={newCompanyName} 
+                      onChange={(e) => setNewCompanyName(e.target.value)} 
+                      placeholder="Ex: Empresa Ltda"
+                      className="border-blue-200 dark:border-blue-800 focus:ring-blue-500"
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    onClick={handleSaveNewCompany}
+                    disabled={!newCompanyName.trim() || isRegistering}
+                    variant="primary"
+                    className="h-10 px-4"
+                  >
+                    {isRegistering ? 'Salvando...' : 'Cadastrar'}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70">
+                  * Clique em "Cadastrar" para salvar a empresa permanentemente antes de continuar.
+                </p>
+              </>
+            )}
           </div>
         )}
         

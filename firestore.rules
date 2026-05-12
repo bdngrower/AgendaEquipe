@@ -61,6 +61,7 @@ service cloud.firestore {
         data.createdAt is string && data.createdAt.size() <= 30 &&
         data.get('address', '') is string && data.get('address', '').size() <= 500 &&
         data.get('contact', '') is string && data.get('contact', '').size() <= 100 &&
+        data.get('companyId', '') is string &&
         data.get('assigneeId', '') is string;
     }
 
@@ -69,8 +70,25 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming());
       allow update: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming()) &&
                     incoming().id == existing().id &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'date', 'time', 'status', 'notes', 'address', 'contact', 'assigneeId']);
+                    incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'date', 'time', 'status', 'notes', 'address', 'contact', 'assigneeId', 'companyId']);
       allow delete: if isSignedIn() && isValidId(visitId);
+    }
+
+    function isValidCompany(data) {
+      return data.keys().hasAll(['id', 'name', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+        data.createdAt is string && data.createdAt.size() <= 30 &&
+        data.get('contact', '') is string && data.get('contact', '').size() <= 100;
+    }
+
+    match /companies/{companyId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(companyId) && isValidCompany(incoming());
+      allow update: if isSignedIn() && isValidId(companyId) && isValidCompany(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'contact']);
+      allow delete: if isSignedIn() && isValidId(companyId);
     }
   }
 }
