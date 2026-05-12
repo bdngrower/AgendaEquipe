@@ -8,11 +8,11 @@ import { AppProvider, useAppStore } from './store/useAppStore';
 import { WeeklyBoard } from './components/board/WeeklyBoard';
 import { ReminderList } from './components/reminders/ReminderList';
 import { Summary } from './components/dashboard/Summary';
-import { Calendar, CheckSquare, Settings, LogOut, Menu, X, Bell, Moon, Sun, DatabaseBackup } from 'lucide-react';
-import { Button, Input } from './components/ui';
+import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun } from 'lucide-react';
+import { Button } from './components/ui';
 
 function MainLayout() {
-  const { currentUser, login, logout, authReady, migrateLocalData } = useAppStore();
+  const { currentUser, authReady } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
@@ -31,27 +31,10 @@ function MainLayout() {
     setTheme(t => t === 'light' ? 'dark' : 'light');
   };
 
-  if (!authReady) {
+  if (!authReady || !currentUser) {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg">
+      <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg font-sans">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return (
-      <div className="flex flex-col h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg font-sans">
-         <div className="bg-white dark:bg-dark-surface p-8 rounded-xl shadow-lg border border-zinc-200 dark:border-dark-border text-center flex flex-col items-center max-w-sm w-full mx-4">
-           <div className="bg-blue-600 p-3 rounded-lg text-white shadow-sm ring-1 ring-blue-700/50 mb-4">
-             <Calendar className="h-8 w-8" />
-           </div>
-           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-2">Agenda Equipe</h1>
-           <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6 font-medium">Faça login para acessar os compromissos</p>
-           <Button onClick={login} className="w-full h-11 text-base font-medium">
-             Entrar com Google
-           </Button>
-         </div>
       </div>
     );
   }
@@ -93,17 +76,7 @@ function MainLayout() {
              <ReminderList />
            </div>
 
-           {localStorage.getItem('agenda-app-data') && (
-             <div className="px-4 pb-2">
-               <Button onClick={migrateLocalData} variant="outline" className="w-full justify-start text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
-                 <DatabaseBackup className="h-4 w-4 mr-2" />
-                 Recuperar Dados Antigos
-               </Button>
-             </div>
-           )}
-
            <div className="p-4 border-t border-zinc-200 dark:border-dark-border bg-zinc-50 dark:bg-transparent flex flex-col gap-4">
-             {currentUser && (
                <div className="flex items-center justify-between w-full">
                  <div className="flex items-center gap-3">
                    <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-dark-surface-hover flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold border border-blue-200 dark:border-dark-border shadow-sm">
@@ -118,12 +91,8 @@ function MainLayout() {
                    <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full hover:bg-zinc-200 dark:hover:bg-dark-surface-hover transition-transform active:scale-95" title="Alternar tema">
                      {theme === 'light' ? <Moon className="h-4 w-4 text-zinc-500" /> : <Sun className="h-4 w-4 text-zinc-400" />}
                    </Button>
-                   <Button variant="ghost" size="icon" onClick={logout} className="rounded-full hover:bg-zinc-200 dark:hover:bg-dark-surface-hover transition-transform active:scale-95 text-red-600 hover:text-red-700 dark:text-red-400" title="Sair">
-                     <LogOut className="h-4 w-4" />
-                   </Button>
                  </div>
                </div>
-             )}
            </div>
         </div>
 
@@ -148,4 +117,5 @@ export default function App() {
     </AppProvider>
   );
 }
+
 

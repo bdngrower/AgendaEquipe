@@ -1,13 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { AppData, Reminder, User, Visit } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { auth, db } from '../lib/firebase';
-import { 
-  onAuthStateChanged, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  signOut 
-} from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { 
   collection, 
   doc, 
@@ -20,8 +15,6 @@ import {
 } from 'firebase/firestore';
 
 interface AppContextType extends AppData {
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
   addReminder: (reminder: Omit<Reminder, 'id' | 'createdAt'>) => void;
   updateReminder: (id: string, updates: Partial<Reminder>) => void;
   deleteReminder: (id: string) => void;
@@ -29,7 +22,6 @@ interface AppContextType extends AppData {
   updateVisit: (id: string, updates: Partial<Visit>) => void;
   deleteVisit: (id: string) => void;
   moveVisit: (id: string, newDate: string) => void;
-  migrateLocalData: () => Promise<void>;
   authReady: boolean;
 }
 
@@ -79,7 +71,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     path
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  // Not throwing immediately to prevent breaking the flow for users
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -90,8 +82,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     currentUser: null,
   });
   const [authReady, setAuthReady] = useState(false);
+  const seeded = useRef(false);
 
   useEffect(() => {
+    const initAuth = async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (err) {
+        console.error("Anonymous auth failed", err);
+      }
+    };
+    initAuth();
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -99,13 +101,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const userDoc = await getDoc(userDocRef);
           const userData: User = {
             id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Unknown',
-            email: firebaseUser.email || '',
+            name: 'Membro da Equipe',
+            email: 'equipe@agenda.com',
             createdAt: new Date().toISOString()
           };
           
           if (!userDoc.exists()) {
             await setDoc(userDocRef, userData);
+          } else {
+             userData.name = userDoc.data().name || userData.name;
+             userData.email = userDoc.data().email || userData.email;
           }
           
           setData(prev => ({ ...prev, currentUser: userData }));
@@ -132,9 +137,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setData(prev => ({ ...prev, users }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
-    const unsubReminders = onSnapshot(query(collection(db, 'reminders')), (snapshot) => {
+    const unsubReminders = onSnapshot(query(collection(db, 'reminders')), async (snapshot) => {
       const reminders = snapshot.docs.map(doc => doc.data() as Reminder);
       setData(prev => ({ ...prev, reminders }));
+      
+      if (!seeded.current && snapshot.empty && data.currentUser) {
+        seeded.current = true;
+        
+        try {
+          const reminderId1 = uuidv4();
+          await setDoc(doc(db, 'reminders', reminderId1), {
+            id: reminderId1,
+            title: 'Reunião Geral',
+            description: 'Reunião de alinhamento com a equipe',
+            date: new Date().toISOString().split('T')[0],
+            time: '09:00',
+            priority: 'Alta',
+            isCompleted: false,
+            createdAt: new Date().toISOString(),
+            assigneeId: data.currentUser.id
+          });
+          
+          const visitId1 = uuidv4();
+          await setDoc(doc(db, 'visits', visitId1), {
+            id: visitId1,
+            customerName: 'Empresa Alpha',
+            address: 'Rua Principal, 123',
+            date: new Date().toISOString().split('T')[0],
+            time: '14:00',
+            status: 'Pendente',
+            notes: 'Visita de demonstração inicial',
+            contact: '(11) 99999-9999',
+            createdAt: new Date().toISOString(),
+            assigneeId: data.currentUser.id
+          });
+        } catch (e) {
+          console.error("Failed to seed initial data", e);
+        }
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'reminders'));
 
     const unsubVisits = onSnapshot(query(collection(db, 'visits')), (snapshot) => {
@@ -148,23 +188,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       unsubVisits();
     };
   }, [data.currentUser?.id]);
-
-  const login = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error('Login error', error);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Logout error', error);
-    }
-  };
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'createdAt'>) => {
     const id = uuidv4();
@@ -230,68 +253,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateVisit(id, { date: newDate });
   };
 
-  const migrateLocalData = async () => {
-    const saved = localStorage.getItem('agenda-app-data');
-    if (!saved || !data.currentUser) return;
-    
-    try {
-      const parsed = JSON.parse(saved);
-      const { currentUser } = data;
-      
-      if (parsed.reminders && Array.isArray(parsed.reminders)) {
-        for (const r of parsed.reminders) {
-          const id = r.id || uuidv4();
-          try {
-             await setDoc(doc(db, 'reminders', String(id)), {
-                id: String(id),
-                title: r.title || 'Lembrete Migrado',
-                description: r.description || '',
-                date: r.date || new Date().toISOString().split('T')[0],
-                time: r.time || '09:00',
-                priority: r.priority || 'Média',
-                isCompleted: !!r.isCompleted,
-                createdAt: r.createdAt || new Date().toISOString(),
-                assigneeId: currentUser.id
-             });
-          } catch(e) { console.error('Erro migrando lembrete', e); }
-        }
-      }
-      
-      if (parsed.visits && Array.isArray(parsed.visits)) {
-        for (const v of parsed.visits) {
-          const id = v.id || uuidv4();
-          try {
-             await setDoc(doc(db, 'visits', String(id)), {
-                id: String(id),
-                customerName: v.customerName || 'Cliente Migrado',
-                date: v.date || new Date().toISOString().split('T')[0],
-                time: v.time || '09:00',
-                status: v.status || 'Pendente',
-                notes: v.notes || '',
-                createdAt: v.createdAt || new Date().toISOString(),
-                address: v.address || '',
-                contact: v.contact || '',
-                assigneeId: currentUser.id
-             });
-          } catch(e) { console.error('Erro migrando visita', e); }
-        }
-      }
-      
-      localStorage.setItem('agenda-app-data-migrated', saved);
-      localStorage.removeItem('agenda-app-data');
-      alert('Seus dados antigos foram recuperados e vinculados à sua conta com sucesso!');
-    } catch (error) {
-      console.error('Migration failed:', error);
-      alert('Houve um erro ao tentar recuperar os dados antigos.');
-    }
-  };
-
   return (
     <AppContext.Provider
       value={{
         ...data,
-        login,
-        logout,
         addReminder,
         updateReminder,
         deleteReminder,
@@ -299,7 +264,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateVisit,
         deleteVisit,
         moveVisit,
-        migrateLocalData,
         authReady,
       }}
     >
@@ -313,4 +277,5 @@ export const useAppStore = () => {
   if (!context) throw new Error('useAppStore must be used within AppProvider');
   return context;
 };
+
 
