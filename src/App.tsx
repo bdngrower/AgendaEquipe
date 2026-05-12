@@ -9,6 +9,7 @@ import { WeeklyBoard } from './components/board/WeeklyBoard';
 import { ReminderList } from './components/reminders/ReminderList';
 import { Summary } from './components/dashboard/Summary';
 import { AnalyticsDashboard } from './components/dashboard/AnalyticsDashboard';
+import { TaskNotificationOverlay } from './components/reminders/TaskNotificationOverlay';
 import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun, ChevronLeft, ChevronRight, LayoutDashboard, ListTodo } from 'lucide-react';
 import { Button } from './components/ui';
 
@@ -44,6 +45,7 @@ function MainLayout() {
 
   return (
     <div className="flex h-screen bg-zinc-50 dark:bg-dark-bg overflow-hidden font-sans">
+      <TaskNotificationOverlay />
       {/* Mobile sidebar toggle */}
       {!sidebarOpen && (
         <div className="lg:hidden fixed top-4 left-4 z-50">
