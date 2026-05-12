@@ -25,7 +25,7 @@ async function startServer() {
 
       const groq = new Groq({ apiKey });
 
-      const prompt = `Analyze these business visit logistics data and provide 3 short, punchy insights in Portuguese about business performance, identifying trends or areas for improvement. Data: ${dataSummary}`;
+      const prompt = `Analise esses dados de logísticas de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência por empresa e eficiência da equipe. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}`;
 
       const chatCompletion = await groq.chat.completions.create({
         messages: [{ role: "user", content: prompt }],

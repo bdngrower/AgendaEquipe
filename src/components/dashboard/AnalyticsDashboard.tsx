@@ -88,7 +88,7 @@ export function AnalyticsDashboard() {
           const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
           const response = await groq.chat.completions.create({
             model: "llama-3.1-8b-instant",
-            messages: [{ role: "user", content: `Analyze these business visit logistics data and provide 3 short, punchy insights in Portuguese about business performance, identifying trends or areas for improvement. Data: ${dataSummary}` }],
+            messages: [{ role: "user", content: `Analise esses dados de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência e eficiência operacional. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}` }],
             temperature: 0.7,
             max_completion_tokens: 300,
           });
@@ -120,7 +120,7 @@ export function AnalyticsDashboard() {
       // Title
       doc.setFontSize(22);
       doc.setTextColor(0);
-      doc.text("Relatório Executivo de Visitas", 20, 20);
+      doc.text("Relatório de Chamados Externos", 20, 20);
 
       // Date
       doc.setFontSize(10);
@@ -133,7 +133,7 @@ export function AnalyticsDashboard() {
       if (insights) {
         doc.setFontSize(14);
         doc.setTextColor(37, 99, 235); // Blue
-        doc.text("Resumo de Inteligência", 20, yPos);
+        doc.text("Análise de Rotina Operacional", 20, yPos);
         yPos += 8;
         
         doc.setFontSize(11);
@@ -151,14 +151,14 @@ export function AnalyticsDashboard() {
       // Section: Top Clientes
       doc.setFontSize(14);
       doc.setTextColor(217, 119, 6); // Amber
-      doc.text("Top Clientes / Oportunidades", 20, yPos);
+      doc.text("Empresas com Mais Chamados", 20, yPos);
       yPos += 8;
       
       doc.setFontSize(11);
       doc.setTextColor(80);
       topCompaniesData.forEach((comp, idx) => {
         doc.text(`${idx + 1}. ${comp.name}`, 20, yPos);
-        doc.text(`${comp.value} visita(s)`, 150, yPos);
+        doc.text(`${comp.value} chamado(s)`, 150, yPos);
         
         // simple separator line
         doc.setDrawColor(230);
@@ -173,14 +173,14 @@ export function AnalyticsDashboard() {
       // Section: Resumo Semanal
       doc.setFontSize(14);
       doc.setTextColor(139, 92, 246); // Purple
-      doc.text("Consistência de Engajamento Semanal", 20, yPos);
+      doc.text("Volume de Chamados por Semana", 20, yPos);
       yPos += 8;
 
       doc.setFontSize(11);
       doc.setTextColor(80);
       weeklyData.forEach((w) => {
         doc.text(`${w.name}`, 20, yPos);
-        doc.text(`${w.total} agendamento(s)`, 150, yPos);
+        doc.text(`${w.total} chamado(s)`, 150, yPos);
         
         doc.setDrawColor(230);
         doc.line(20, yPos + 2, 190, yPos + 2);
@@ -188,7 +188,7 @@ export function AnalyticsDashboard() {
         yPos += 8;
       });
 
-      doc.save(`relatorio-detalhado-${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`relatorio-chamados-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error(error);
       alert("Erro ao gerar PDF.");
