@@ -45,10 +45,12 @@ function MainLayout() {
 
   return (
     <div className="flex h-screen bg-zinc-50 dark:bg-dark-bg overflow-hidden font-sans">
-      <TaskNotificationOverlay />
+      <div className="print:hidden">
+        <TaskNotificationOverlay />
+      </div>
       {/* Mobile sidebar toggle */}
       {!sidebarOpen && (
-        <div className="lg:hidden fixed top-4 left-4 z-50">
+        <div className="lg:hidden fixed top-4 left-4 z-50 print:hidden">
           <Button variant="outline" size="icon" onClick={() => setSidebarOpen(true)} className="bg-white dark:bg-dark-surface shadow-sm border-zinc-200 dark:border-dark-border">
             <Menu className="h-5 w-5 bg-transparent" />
           </Button>
@@ -57,7 +59,7 @@ function MainLayout() {
 
       {/* Desktop expand button (visible when collapsed) */}
       {!desktopSidebarOpen && (
-        <div className="hidden lg:flex fixed top-4 left-4 z-50">
+        <div className="hidden lg:flex fixed top-4 left-4 z-50 print:hidden">
           <Button 
             variant="outline" 
             size="icon" 
@@ -73,7 +75,7 @@ function MainLayout() {
       {/* Sidebar overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden print:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -81,7 +83,7 @@ function MainLayout() {
       {/* Main content - Side by Side layout */}
       <div className="flex w-full h-full">
         {/* Left column: Lembretes */}
-        <div className={`fixed inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 ${desktopSidebarOpen ? 'lg:flex w-80 lg:w-96' : 'lg:hidden w-0'} flex-col border-r border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-sm z-50 transition-all duration-300 lg:transition-colors lg:duration-200`}>
+        <div className={`fixed inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 ${desktopSidebarOpen ? 'lg:flex w-80 lg:w-96' : 'lg:hidden w-0'} flex-col border-r border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-sm z-50 transition-all duration-300 lg:transition-colors lg:duration-200 print:hidden`}>
            <div className="p-5 border-b border-zinc-200 dark:border-dark-border flex items-center justify-between transition-colors duration-200">
              <div className="flex items-center gap-3">
                <div className="bg-blue-600 p-2 rounded-lg text-white shadow-sm ring-1 ring-blue-700/50">

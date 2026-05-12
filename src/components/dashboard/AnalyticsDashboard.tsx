@@ -68,25 +68,39 @@ export function AnalyticsDashboard() {
         Total visits: ${visits.length}
         Top customers: ${topCompaniesData.map(c => `${c.name} (${c.value} visits)`).join(', ')}
         Recent weekly trends: ${weeklyData.map(w => `${w.name}: ${w.total}`).join(', ')}
-        Visit statuses counts: ${visits.reduce((acc: any, v) => {
-          acc[v.status] = (acc[v.status] || 0) + 1;
-          return acc;
-        }, {})}
       `;
 
-      const response = await fetch('/api/insights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataSummary })
-      });
-
-      if (!response.ok) throw new Error('API server error');
-      
-      const data = await response.json();
-      setInsights(data.insights || 'Não foi possível gerar insights no momento.');
+      let text = '';
+      try {
+        const response = await fetch('/api/insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataSummary })
+        });
+        if (!response.ok) throw new Error('API server error');
+        const data = await response.json();
+        text = data.insights;
+      } catch (apiError) {
+        // Fallback for Vercel Static deployments without the backend
+        if (import.meta.env.VITE_AI_KEY) {
+          const Groq = (await import('groq-sdk')).default;
+          // Note: using Groq in the browser requires dangerouslyAllowBrowser
+          const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
+          const response = await groq.chat.completions.create({
+            model: "llama3-8b-8192",
+            messages: [{ role: "user", content: `Analyze these business visit logistics data and provide 3 short, punchy insights in Portuguese about business performance, identifying trends or areas for improvement. Data: ${dataSummary}` }],
+            temperature: 0.7,
+            max_completion_tokens: 300,
+          });
+          text = response.choices[0]?.message?.content || '';
+        } else {
+          throw new Error('No API key available for client-side fallback.');
+        }
+      }
+      setInsights(text || 'Não foi possível gerar insights no momento.');
     } catch (error) {
       console.error("AI Insights Error:", error);
-      setInsights('Erro ao conectar com o servidor de inteligência artificial.');
+      setInsights('Erro ao conectar com a inteligência artificial. Se estiver no Vercel, certifique-se de configurar a variável VITE_AI_KEY.');
     } finally {
       setLoadingInsights(false);
     }
@@ -98,49 +112,8 @@ export function AnalyticsDashboard() {
     }
   }, [visits.length]);
 
-  const handleExportPDF = async () => {
-    const element = document.getElementById('analytics-content');
-    if (!element) return;
-    
-    setIsExporting(true);
-    
-    // Forçar estilos compatíveis antes da captura
-    const originalStyle = element.style.cssText;
-    element.style.width = '1000px'; // Largura fixa para renderização consistente
-    element.style.backgroundColor = '#ffffff';
-    
-    try {
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('analytics-content');
-          if (el) {
-            el.style.width = '1000px';
-            el.style.padding = '40px';
-            // Remover gradientes oklch no clone
-            const aiCard = el.querySelector('.ai-card');
-            if (aiCard) (aiCard as HTMLElement).style.background = '#2563eb';
-          }
-        }
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`relatorio-visitas-${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (error) {
-      console.error("Export Error:", error);
-      alert("Erro ao gerar PDF. Tente novamente.");
-    } finally {
-      element.style.cssText = originalStyle;
-      setIsExporting(false);
-    }
+  const handleExportPDF = () => {
+    window.print();
   };
 
   return (
@@ -198,15 +171,15 @@ export function AnalyticsDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Empresas */}
-          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
+          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg" style={{ backgroundColor: '#fffbeb' }}>
+              <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg print:bg-transparent" style={{ backgroundColor: '#fffbeb' }}>
                 <Trophy className="h-5 w-5 text-amber-500" />
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Top Clientes</h3>
             </div>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[300px] min-h-[300px] w-full min-w-full">
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={300}>
                 <PieChart>
                   <Pie
                     data={topCompaniesData}
@@ -236,15 +209,15 @@ export function AnalyticsDashboard() {
           </div>
 
           {/* Agendamentos Mensais */}
-          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
+          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg" style={{ backgroundColor: '#eff6ff' }}>
+              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg print:bg-transparent" style={{ backgroundColor: '#eff6ff' }}>
                 <TrendingUp className="h-5 w-5 text-blue-500" />
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Crescimento Mensal</h3>
             </div>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[300px] min-h-[300px] w-full min-w-full">
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={300}>
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
@@ -280,15 +253,15 @@ export function AnalyticsDashboard() {
         </div>
 
         {/* Visão Semanal */}
-        <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
+        <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
           <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg" style={{ backgroundColor: '#faf5ff' }}>
+            <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg print:bg-transparent" style={{ backgroundColor: '#faf5ff' }}>
               <Calendar className="h-5 w-5 text-purple-500" />
             </div>
             <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Consistência Semanal</h3>
           </div>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[250px] min-h-[250px] w-full min-w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={250}>
               <LineChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
