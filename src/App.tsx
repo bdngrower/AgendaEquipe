@@ -67,7 +67,7 @@ function MainLayout() {
                <div className="bg-blue-600 p-2 rounded-lg text-white shadow-sm ring-1 ring-blue-700/50">
                  <Calendar className="h-5 w-5" />
                </div>
-               <span className="font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 text-lg">Agenda Equipe</span>
+               <span className="font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 text-lg">ZimTask</span>
              </div>
              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} className="lg:hidden rounded-full hover:bg-zinc-200 dark:hover:bg-dark-surface-hover">
                <X className="h-5 w-5 text-zinc-500" />
