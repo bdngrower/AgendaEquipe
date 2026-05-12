@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 && data.id == request.auth.uid &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() <= 200 &&
+        data.createdAt is string && data.createdAt.size() <= 30;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(userId) && userId == request.auth.uid &&
+                    isValidUser(incoming());
+      allow update: if isSignedIn() && isValidId(userId) && userId == request.auth.uid &&
+                    isValidUser(incoming()) && incoming().id == existing().id &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name']);
+      allow delete: if false;
+    }
+
+    function isValidReminder(data) {
+      return data.keys().hasAll(['id', 'title', 'description', 'date', 'time', 'priority', 'isCompleted', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.title is string && data.title.size() <= 200 &&
+        data.description is string && data.description.size() <= 2000 &&
+        data.date is string && data.date.size() <= 20 &&
+        data.time is string && data.time.size() <= 10 &&
+        data.priority is string && data.priority.matches('^(Baixa|Média|Alta)$') &&
+        data.isCompleted is bool &&
+        data.createdAt is string && data.createdAt.size() <= 30 &&
+        data.get('assigneeId', '') is string;
+    }
+
+    match /reminders/{reminderId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(reminderId) && isValidReminder(incoming());
+      allow update: if isSignedIn() && isValidId(reminderId) && isValidReminder(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'date', 'time', 'priority', 'isCompleted', 'assigneeId']);
+      allow delete: if isSignedIn() && isValidId(reminderId);
+    }
+
+    function isValidVisit(data) {
+      return data.keys().hasAll(['id', 'customerName', 'date', 'time', 'status', 'notes', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.customerName is string && data.customerName.size() <= 200 &&
+        data.date is string && data.date.size() <= 20 &&
+        data.time is string && data.time.size() <= 10 &&
+        data.status is string && data.status.matches('^(Pendente|Em andamento|Concluído|Cancelado)$') &&
+        data.notes is string && data.notes.size() <= 2000 &&
+        data.createdAt is string && data.createdAt.size() <= 30 &&
+        data.get('address', '') is string && data.get('address', '').size() <= 500 &&
+        data.get('contact', '') is string && data.get('contact', '').size() <= 100 &&
+        data.get('assigneeId', '') is string;
+    }
+
+    match /visits/{visitId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming());
+      allow update: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'date', 'time', 'status', 'notes', 'address', 'contact', 'assigneeId']);
+      allow delete: if isSignedIn() && isValidId(visitId);
+    }
+  }
+}
