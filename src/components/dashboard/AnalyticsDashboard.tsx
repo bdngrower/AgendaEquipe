@@ -87,7 +87,7 @@ export function AnalyticsDashboard() {
           // Note: using Groq in the browser requires dangerouslyAllowBrowser
           const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
           const response = await groq.chat.completions.create({
-            model: "llama3-8b-8192",
+            model: "llama-3.1-8b-instant",
             messages: [{ role: "user", content: `Analyze these business visit logistics data and provide 3 short, punchy insights in Portuguese about business performance, identifying trends or areas for improvement. Data: ${dataSummary}` }],
             temperature: 0.7,
             max_completion_tokens: 300,
@@ -113,7 +113,88 @@ export function AnalyticsDashboard() {
   }, [visits.length]);
 
   const handleExportPDF = () => {
-    window.print();
+    setIsExporting(true);
+    try {
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(22);
+      doc.setTextColor(0);
+      doc.text("Relatório Executivo de Visitas", 20, 20);
+
+      // Date
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 28);
+
+      let yPos = 45;
+
+      // Section: Insights
+      if (insights) {
+        doc.setFontSize(14);
+        doc.setTextColor(37, 99, 235); // Blue
+        doc.text("Resumo de Inteligência", 20, yPos);
+        yPos += 8;
+        
+        doc.setFontSize(11);
+        doc.setTextColor(50);
+        // Clean markdown from insights, simple string split
+        const cleanInsights = insights.replace(/\*\*/g, '');
+        const splitText = doc.splitTextToSize(cleanInsights, 170);
+        doc.text(splitText, 20, yPos);
+        yPos += (splitText.length * 6) + 15;
+      }
+
+      // Check page boundary
+      if (yPos > 240) { doc.addPage(); yPos = 20; }
+
+      // Section: Top Clientes
+      doc.setFontSize(14);
+      doc.setTextColor(217, 119, 6); // Amber
+      doc.text("Top Clientes / Oportunidades", 20, yPos);
+      yPos += 8;
+      
+      doc.setFontSize(11);
+      doc.setTextColor(80);
+      topCompaniesData.forEach((comp, idx) => {
+        doc.text(`${idx + 1}. ${comp.name}`, 20, yPos);
+        doc.text(`${comp.value} visita(s)`, 150, yPos);
+        
+        // simple separator line
+        doc.setDrawColor(230);
+        doc.line(20, yPos + 2, 190, yPos + 2);
+        
+        yPos += 8;
+      });
+
+      yPos += 15;
+      if (yPos > 240) { doc.addPage(); yPos = 20; }
+
+      // Section: Resumo Semanal
+      doc.setFontSize(14);
+      doc.setTextColor(139, 92, 246); // Purple
+      doc.text("Consistência de Engajamento Semanal", 20, yPos);
+      yPos += 8;
+
+      doc.setFontSize(11);
+      doc.setTextColor(80);
+      weeklyData.forEach((w) => {
+        doc.text(`${w.name}`, 20, yPos);
+        doc.text(`${w.total} agendamento(s)`, 150, yPos);
+        
+        doc.setDrawColor(230);
+        doc.line(20, yPos + 2, 190, yPos + 2);
+        
+        yPos += 8;
+      });
+
+      doc.save(`relatorio-detalhado-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao gerar PDF.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (

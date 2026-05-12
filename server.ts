@@ -29,7 +29,7 @@ async function startServer() {
 
       const chatCompletion = await groq.chat.completions.create({
         messages: [{ role: "user", content: prompt }],
-        model: "llama3-8b-8192", // A common and fast model string for Groq. Provide a solid default.
+        model: "llama-3.1-8b-instant", // A common and fast model string for Groq. Provide a solid default.
         temperature: 0.7,
         max_completion_tokens: 300,
       });
