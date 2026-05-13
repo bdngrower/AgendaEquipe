@@ -25,7 +25,7 @@ export function Summary() {
   const incompleteReminders = reminders.filter(r => !r.isCompleted).length;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-6 mb-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 px-4 md:px-6 mb-4">
       <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200/80 dark:border-dark-border shadow-sm transition-all duration-200 hover:shadow-md">
         <div className="flex justify-between items-start mb-3">
            <h3 className="text-zinc-500 dark:text-zinc-400 text-sm font-medium tracking-wide uppercase text-[11px]">Total (Semana)</h3>

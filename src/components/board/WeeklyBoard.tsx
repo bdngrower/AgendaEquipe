@@ -67,24 +67,24 @@ export function WeeklyBoard() {
 
   return (
     <div className="h-full flex flex-col pt-4">
-      <div className="mb-4 flex items-center justify-between px-6">
+      <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Agenda Semanal</h2>
           <p className="text-zinc-500 dark:text-zinc-400">
             {format(days[0].date, "d 'de' MMMM", { locale: ptBR })} a {format(days[4].date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => setCurrentDate(addDays(currentDate, -7))}>Anterior</Button>
-          <Button variant="outline" onClick={() => setCurrentDate(new Date())}>Hoje</Button>
-          <Button variant="outline" onClick={() => setCurrentDate(addDays(currentDate, 7))}>Próxima</Button>
-          <Button onClick={() => handleOpenNewVisit()}>
-            <Plus className="mr-2 h-4 w-4" /> Nova Visita
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(addDays(currentDate, -7))}>Anterior</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Hoje</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(addDays(currentDate, 7))}>Próxima</Button>
+          <Button size="sm" onClick={() => handleOpenNewVisit()}>
+            <Plus className="mr-2 h-4 w-4 hidden sm:inline" /> Nova Visita
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-6 px-6">
+      <div className="flex-1 overflow-x-auto pb-6 px-4 md:px-6">
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex h-full min-h-[600px] gap-4">
             {days.map((day) => {
