@@ -25,6 +25,7 @@ interface AppContextType extends AppData {
   moveVisit: (id: string, newDate: string) => void;
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => Promise<string>;
   authReady: boolean;
+  dataLoaded: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -85,6 +86,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     currentUser: null,
   });
   const [authReady, setAuthReady] = useState(false);
+  const [collectionsLoaded, setCollectionsLoaded] = useState({
+    users: false,
+    companies: false,
+    reminders: false,
+    visits: false
+  });
+  const dataLoaded = Object.values(collectionsLoaded).every(Boolean);
   const seeded = useRef(false);
 
   useEffect(() => {
@@ -112,16 +120,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubUsers = onSnapshot(query(collection(db, 'users')), (snapshot) => {
       const users = snapshot.docs.map(doc => doc.data() as User);
       setData(prev => ({ ...prev, users }));
+      setCollectionsLoaded(prev => ({ ...prev, users: true }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
     const unsubCompanies = onSnapshot(query(collection(db, 'companies'), orderBy('name')), (snapshot) => {
       const companies = snapshot.docs.map(doc => doc.data() as Company);
       setData(prev => ({ ...prev, companies }));
+      setCollectionsLoaded(prev => ({ ...prev, companies: true }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'companies'));
 
     const unsubReminders = onSnapshot(query(collection(db, 'reminders')), async (snapshot) => {
       const reminders = snapshot.docs.map(doc => doc.data() as Reminder);
       setData(prev => ({ ...prev, reminders }));
+      setCollectionsLoaded(prev => ({ ...prev, reminders: true }));
       
       if (!seeded.current && snapshot.empty && data.currentUser) {
         seeded.current = true;
@@ -170,6 +181,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubVisits = onSnapshot(query(collection(db, 'visits')), (snapshot) => {
       const visits = snapshot.docs.map(doc => doc.data() as Visit);
       setData(prev => ({ ...prev, visits }));
+      setCollectionsLoaded(prev => ({ ...prev, visits: true }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'visits'));
 
     return () => {
@@ -273,6 +285,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         moveVisit,
         addCompany,
         authReady,
+        dataLoaded,
       }}
     >
       {children}

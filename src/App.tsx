@@ -14,7 +14,7 @@ import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun, ChevronLeft,
 import { Button } from './components/ui';
 
 function MainLayout() {
-  const { currentUser, authReady } = useAppStore();
+  const { currentUser, authReady, dataLoaded } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'agenda' | 'reports'>('agenda');
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
@@ -35,10 +35,11 @@ function MainLayout() {
     setTheme(t => t === 'light' ? 'dark' : 'light');
   };
 
-  if (!authReady) {
+  if (!authReady || !dataLoaded) {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg font-sans">
+      <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg font-sans flex-col gap-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-sm text-zinc-500 font-medium animate-pulse">Carregando dados...</div>
       </div>
     );
   }
