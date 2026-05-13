@@ -156,10 +156,10 @@ function MainLayout() {
         <div className="flex-1 flex flex-col h-full overflow-hidden custom-scrollbar bg-zinc-50/50 dark:bg-dark-bg border-l border-transparent transition-colors duration-200">
            {activeTab === 'agenda' ? (
              <>
-               <div className="pt-16 lg:pt-8 pb-2 px-2">
+               <div className="pt-16 lg:pt-8 pb-2 px-2 hidden md:block">
                  <Summary />
                </div>
-               <div className="flex-1 overflow-hidden pb-4 px-2">
+               <div className="flex-1 overflow-hidden pb-4 px-2 pt-16 md:pt-0">
                  <WeeklyBoard />
                </div>
              </>
