@@ -99,8 +99,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const guestUser: User = {
             id: 'guest',
             name: 'Usuário Local (Offline)',
-            email: 'equipe@agenda.com',
-            createdAt: new Date().toISOString()
+            email: 'equipe@agenda.com'
           };
           setData(prev => ({ ...prev, currentUser: guestUser }));
           setAuthReady(true);
@@ -122,8 +121,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const userData: User = {
             id: firebaseUser.uid,
             name: 'Membro da Equipe',
-            email: 'equipe@agenda.com',
-            createdAt: new Date().toISOString()
+            email: 'equipe@agenda.com'
           };
           
           if (!userDoc.exists()) {

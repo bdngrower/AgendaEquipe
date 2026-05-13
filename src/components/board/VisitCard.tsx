@@ -13,6 +13,7 @@ const statusColors = {
 };
 
 interface VisitCardProps {
+  key?: React.Key;
   visit: Visit;
   index: number;
   onClick: (visit: Visit) => void;

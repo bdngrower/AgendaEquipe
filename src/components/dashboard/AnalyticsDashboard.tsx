@@ -5,22 +5,46 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line
 } from 'recharts';
 import { Button } from '../ui';
-import { Trophy, TrendingUp, Calendar, Download, Sparkles, FileText, Loader2 } from 'lucide-react';
+import { Trophy, TrendingUp, Calendar, Download, Sparkles, FileText, Loader2, Filter } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
+
+type DateFilterType = 'all' | 'this_year' | 'last_6_months' | 'this_month';
 
 export function AnalyticsDashboard() {
   const { visits, companies } = useAppStore();
   const [isExporting, setIsExporting] = useState(false);
   const [insights, setInsights] = useState<string>('');
   const [loadingInsights, setLoadingInsights] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('all');
+
+  const filteredVisits = useMemo(() => {
+    if (dateFilter === 'all') return visits;
+    
+    const now = new Date();
+    return visits.filter(v => {
+      // Usar a mesma tratativa de timezone (meio-dia) para ser consistente
+      const vDate = new Date(v.date + 'T12:00:00');
+      if (dateFilter === 'this_year') {
+        return vDate.getFullYear() === now.getFullYear();
+      }
+      if (dateFilter === 'this_month') {
+        return vDate.getFullYear() === now.getFullYear() && vDate.getMonth() === now.getMonth();
+      }
+      if (dateFilter === 'last_6_months') {
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+        return vDate >= sixMonthsAgo;
+      }
+      return true;
+    });
+  }, [visits, dateFilter]);
 
   // 1. Top 3 Empresas (Pizza)
   const topCompaniesData = useMemo(() => {
     const counts: Record<string, number> = {};
-    visits.forEach(v => {
+    filteredVisits.forEach(v => {
       if (v.customerName) {
         counts[v.customerName] = (counts[v.customerName] || 0) + 1;
       }
@@ -30,7 +54,7 @@ export function AnalyticsDashboard() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5); 
-  }, [visits]);
+  }, [filteredVisits]);
 
   // 2. Agendamentos por Semana
   const weeklyData = useMemo(() => {
@@ -38,7 +62,7 @@ export function AnalyticsDashboard() {
     const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
     // Sort visits by date to maintain chronological order
-    const sortedVisits = [...visits].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedVisits = [...filteredVisits].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     sortedVisits.forEach(v => {
       // Utilizar o meio-dia para evitar problemas de fuso horário ao fazer o parse
@@ -61,31 +85,33 @@ export function AnalyticsDashboard() {
     });
 
     return Object.entries(weeks).map(([name, total]) => ({ name, total })).slice(-4);
-  }, [visits]);
+  }, [filteredVisits]);
 
   // 3. Agendamentos Mensais
   const monthlyData = useMemo(() => {
     const months: Record<string, number> = {};
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     
-    visits.forEach(v => {
-      const d = new Date(v.date);
+    filteredVisits.forEach(v => {
+      const d = new Date(v.date + 'T12:00:00');
       const monthLabel = monthNames[d.getMonth()];
+      // Para o gráfico de crescimento, a gente pode querer mostrar apenas os meses filtrados
       months[monthLabel] = (months[monthLabel] || 0) + 1;
     });
 
+    // Filtra para garantir que só exibe os meses que têm dados (ou se não houver filtro mostra os até o mês atual)
     return monthNames.map(name => ({
       name,
       total: months[name] || 0
-    })).filter(m => m.total > 0 || monthNames.indexOf(m.name) <= new Date().getMonth());
-  }, [visits]);
+    })).filter(m => m.total > 0 || dateFilter === 'all' && monthNames.indexOf(m.name) <= new Date().getMonth());
+  }, [filteredVisits, dateFilter]);
 
   const generateAIInsights = async () => {
-    if (loadingInsights || visits.length === 0) return;
+    if (loadingInsights || filteredVisits.length === 0) return;
     setLoadingInsights(true);
     try {
       const dataSummary = `
-        Total visits: ${visits.length}
+        Total visits: ${filteredVisits.length}
         Top customers: ${topCompaniesData.map(c => `${c.name} (${c.value} visits)`).join(', ')}
         Recent weekly trends: ${weeklyData.map(w => `${w.name}: ${w.total}`).join(', ')}
       `;
@@ -236,21 +262,38 @@ export function AnalyticsDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-blue-600" />
           <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Visão Geral</h2>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleExportPDF}
-          disabled={isExporting}
-          className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-dark-border"
-        >
-          {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-          Exportar PDF
-        </Button>
+        
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as DateFilterType)}
+              className="w-full sm:w-auto appearance-none bg-white dark:bg-dark-surface border border-zinc-200 dark:border-dark-border rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Todo o período</option>
+              <option value="this_month">Este mês</option>
+              <option value="last_6_months">Últimos 6 meses</option>
+              <option value="this_year">Este ano</option>
+            </select>
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+          </div>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-dark-border flex-shrink-0"
+          >
+            {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Exportar PDF
+          </Button>
+        </div>
       </div>
 
       <div id="analytics-content" className="space-y-6" style={{ backgroundColor: '#ffffff', color: '#18181b', minWidth: isExporting ? '1000px' : 'auto' }}>
