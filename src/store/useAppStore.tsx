@@ -88,71 +88,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const seeded = useRef(false);
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await signInAnonymously(auth);
-      } catch (err: any) {
-        console.error("Anonymous auth failed", err);
-        // Fallback for when Anonymous Auth is not enabled in Firebase Console
-        if (err.code === 'auth/admin-restricted-operation') {
-          console.warn("Please enable Anonymous Auth in Firebase Console to persist data.");
-          const guestUser: User = {
-            id: 'guest',
-            name: 'Usuário Local (Offline)',
-            email: 'equipe@agenda.com'
-          };
-          setData(prev => ({ ...prev, currentUser: guestUser }));
-          setAuthReady(true);
-        }
-      }
+    // Definimos um usuário padrão para que o sistema funcione sem login explícito
+    // conforme solicitado pelo usuário ("não quero usuário nem nada")
+    const defaultUser: User = {
+      id: 'equipe-global',
+      name: 'Membro da Equipe',
+      email: 'equipe@agenda.com'
     };
-    initAuth();
+    setData(prev => ({ ...prev, currentUser: defaultUser }));
+    setAuthReady(true);
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Prevent race condition in React StrictMode where an obsolete user triggers a fetch
-        if (auth.currentUser && auth.currentUser.uid !== firebaseUser.uid) {
-          return;
-        }
-        
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        try {
-          const userDoc = await getDoc(userDocRef);
-          const userData: User = {
-            id: firebaseUser.uid,
-            name: 'Membro da Equipe',
-            email: 'equipe@agenda.com'
-          };
-          
-          if (!userDoc.exists()) {
-            await setDoc(userDocRef, userData);
-          } else {
-             userData.name = userDoc.data().name || userData.name;
-             userData.email = userDoc.data().email || userData.email;
-          }
-          
-          setData(prev => ({ ...prev, currentUser: userData }));
-        } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
-        }
-        setAuthReady(true);
-      } else {
-        // If not signed in and not already handled by catch block
-        if (!authReady) {
-          // set authReady true but keep currentUser null unless catch handled it
-          setAuthReady(true);
-        }
-      }
+    // Tentamos o login anônimo apenas em segundo plano para manter uma sessão do Firebase,
+    // mas não bloqueamos o funcionamento do app com isso.
+    signInAnonymously(auth).catch(err => {
+      console.warn("Silent anonymous log failure (expected if not enabled):", err.message);
     });
-
-    return () => unsubscribeAuth();
-  }, [authReady]);
+  }, []);
 
   useEffect(() => {
-    if (!data.currentUser) {
-      setData(prev => ({ ...prev, users: [], reminders: [], visits: [] }));
-      return;
-    }
+    // Carregamos os dados independentemente do login agora
+    // pois as regras do Firestore foram relaxadas para este applet
 
     const unsubUsers = onSnapshot(query(collection(db, 'users')), (snapshot) => {
       const users = snapshot.docs.map(doc => doc.data() as User);
@@ -223,7 +178,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       unsubReminders();
       unsubVisits();
     };
-  }, [data.currentUser?.id]);
+  }, []);
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'createdAt'>) => {
     const id = uuidv4();

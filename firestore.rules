@@ -5,7 +5,7 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    function isSignedIn() { return request.auth != null; }
+    function isSignedIn() { return true; } // Simplified for shared public access as requested
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
