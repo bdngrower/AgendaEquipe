@@ -36,6 +36,7 @@ export interface Visit {
   time: string; // HH:mm
   assigneeId?: string;
   status: Status;
+  isEmergency?: boolean;
   notes: string;
   contact?: string;
   createdAt: string;

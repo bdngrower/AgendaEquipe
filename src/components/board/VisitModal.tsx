@@ -213,6 +213,20 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
           </Select>
         </div>
 
+        <div className="flex items-center gap-2 my-2">
+          <input 
+            type="checkbox" 
+            id="emergency-checkbox"
+            name="isEmergency"
+            checked={!!formData.isEmergency}
+            onChange={(e) => setFormData(prev => ({ ...prev, isEmergency: e.target.checked }))}
+            className="rounded border-zinc-300 text-red-600 focus:ring-red-500 h-4 w-4"
+          />
+          <label htmlFor="emergency-checkbox" className="text-sm font-medium text-red-600 dark:text-red-400">
+            Visita de Emergência (Sem Agendamento Prévio)
+          </label>
+        </div>
+
         <div>
           <label className="block text-sm font-medium tracking-wide text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">Observações</label>
           <textarea 

@@ -41,7 +41,14 @@ export function VisitCard({ visit, index, onClick }: VisitCardProps) {
           )}
         >
           <div className="mb-3 flex items-start justify-between gap-2">
-            <h4 className="font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{visit.customerName}</h4>
+            <div className="flex flex-col gap-1">
+              <h4 className="font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{visit.customerName}</h4>
+              {visit.isEmergency && (
+                <span className="inline-flex w-fit items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800/50">
+                  Emergência
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <span className={cn(
                 "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border",

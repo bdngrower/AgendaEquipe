@@ -57,6 +57,7 @@ service cloud.firestore {
         data.date is string && data.date.size() <= 20 &&
         data.time is string && data.time.size() <= 10 &&
         data.status is string && data.status.matches('^(Pendente|Em andamento|Concluído|Cancelado)$') &&
+        data.get('isEmergency', false) is bool &&
         data.notes is string && data.notes.size() <= 2000 &&
         data.createdAt is string && data.createdAt.size() <= 30 &&
         data.get('address', '') is string && data.get('address', '').size() <= 500 &&
@@ -70,7 +71,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming());
       allow update: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming()) &&
                     incoming().id == existing().id &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'date', 'time', 'status', 'notes', 'address', 'contact', 'assigneeId', 'companyId']);
+                    incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'date', 'time', 'status', 'notes', 'address', 'contact', 'assigneeId', 'companyId', 'isEmergency']);
       allow delete: if isSignedIn() && isValidId(visitId);
     }
 

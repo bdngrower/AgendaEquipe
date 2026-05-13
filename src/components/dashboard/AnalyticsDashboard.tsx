@@ -35,11 +35,31 @@ export function AnalyticsDashboard() {
   // 2. Agendamentos por Semana
   const weeklyData = useMemo(() => {
     const weeks: Record<string, number> = {};
-    visits.forEach(v => {
-      const d = new Date(v.date);
-      const weekLabel = `Sem ${Math.ceil(d.getDate() / 7)}`;
+    const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+    // Sort visits by date to maintain chronological order
+    const sortedVisits = [...visits].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    sortedVisits.forEach(v => {
+      // Utilizar o meio-dia para evitar problemas de fuso horário ao fazer o parse
+      const d = new Date(v.date + 'T12:00:00');
+      
+      const dayOfWeek = d.getDay(); // 0 = Dom, 1 = Seg ... 6 = Sab
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      
+      // Fixar a base na Segunda-feira para agrupar idêntico pra todos da mesma semana
+      const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diffToMonday);
+      const friday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 4);
+      
+      // Calcular com base na segunda-feira garante contagem exata sem duplicar chaves
+      const monthIdx = monday.getMonth();
+      const weekOfMonth = Math.ceil(monday.getDate() / 7);
+      
+      const weekLabel = `Semana ${weekOfMonth} de ${monthNames[monthIdx]} {dia ${monday.getDate()} a ${friday.getDate()}}`;
+      
       weeks[weekLabel] = (weeks[weekLabel] || 0) + 1;
     });
+
     return Object.entries(weeks).map(([name, total]) => ({ name, total })).slice(-4);
   }, [visits]);
 
@@ -259,8 +279,8 @@ export function AnalyticsDashboard() {
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Top Clientes</h3>
             </div>
-            <div className="h-[300px] min-h-[300px] w-full min-w-full">
-              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={300}>
+            <div className="h-[300px] w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={topCompaniesData}
@@ -297,8 +317,8 @@ export function AnalyticsDashboard() {
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Crescimento Mensal</h3>
             </div>
-            <div className="h-[300px] min-h-[300px] w-full min-w-full">
-              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={300}>
+            <div className="h-[300px] w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
@@ -341,8 +361,8 @@ export function AnalyticsDashboard() {
             </div>
             <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Consistência Semanal</h3>
           </div>
-          <div className="h-[250px] min-h-[250px] w-full min-w-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={250}>
+          <div className="h-[250px] w-full relative">
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
