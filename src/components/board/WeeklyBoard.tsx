@@ -66,7 +66,7 @@ export function WeeklyBoard() {
   };
 
   return (
-    <div className="h-auto md:h-full flex flex-col pt-4">
+    <div className="h-full flex flex-col pt-4">
       <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Agenda Semanal</h2>
@@ -84,9 +84,9 @@ export function WeeklyBoard() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-hidden md:overflow-x-auto pb-6 px-4 md:px-6">
+      <div className="flex-1 overflow-y-auto md:overflow-y-hidden overflow-x-hidden md:overflow-x-auto pb-6 px-4 md:px-6">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex flex-col md:flex-row md:h-full md:min-h-[600px] gap-6 md:gap-4">
+          <div className="flex flex-col md:flex-row pb-10 md:pb-0 md:h-full md:min-h-[600px] gap-6 md:gap-4">
             {days.map((day) => {
               const matches = visits
                 .filter((v) => v.date === day.dateString)
@@ -112,7 +112,7 @@ export function WeeklyBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 overflow-y-auto p-3 transition-colors ${
+                        className={`flex-1 md:overflow-y-auto min-h-[150px] p-3 transition-colors ${
                           snapshot.isDraggingOver ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''
                         }`}
                       >
