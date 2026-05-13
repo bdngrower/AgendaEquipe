@@ -91,32 +91,48 @@ export function AnalyticsDashboard() {
       `;
 
       let text = '';
-      try {
-        const response = await fetch('/api/insights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataSummary })
+      
+      const isVercel = window.location.hostname.includes('vercel.app');
+      
+      // If we have VITE_AI_KEY and we are on Vercel, use client-side Groq directly to avoid 405
+      if (isVercel && import.meta.env.VITE_AI_KEY) {
+        const Groq = (await import('groq-sdk')).default;
+        const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
+        const response = await groq.chat.completions.create({
+          model: "llama-3.1-8b-instant",
+          messages: [{ role: "user", content: `Analise esses dados de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência e eficiência operacional. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}` }],
+          temperature: 0.7,
+          max_completion_tokens: 300,
         });
-        if (!response.ok) throw new Error('API server error');
-        const data = await response.json();
-        text = data.insights;
-      } catch (apiError) {
-        // Fallback for Vercel Static deployments without the backend
-        if (import.meta.env.VITE_AI_KEY) {
-          const Groq = (await import('groq-sdk')).default;
-          // Note: using Groq in the browser requires dangerouslyAllowBrowser
-          const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
-          const response = await groq.chat.completions.create({
-            model: "llama-3.1-8b-instant",
-            messages: [{ role: "user", content: `Analise esses dados de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência e eficiência operacional. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}` }],
-            temperature: 0.7,
-            max_completion_tokens: 300,
+        text = response.choices[0]?.message?.content || '';
+      } else {
+        try {
+          const response = await fetch('/api/insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataSummary })
           });
-          text = response.choices[0]?.message?.content || '';
-        } else {
-          throw new Error('No API key available for client-side fallback.');
+          if (!response.ok) throw new Error('API server error');
+          const data = await response.json();
+          text = data.insights;
+        } catch (apiError) {
+          // Fallback if local backend is down or not existent
+          if (import.meta.env.VITE_AI_KEY) {
+            const Groq = (await import('groq-sdk')).default;
+            const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
+            const response = await groq.chat.completions.create({
+              model: "llama-3.1-8b-instant",
+              messages: [{ role: "user", content: `Analise esses dados de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência e eficiência operacional. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}` }],
+              temperature: 0.7,
+              max_completion_tokens: 300,
+            });
+            text = response.choices[0]?.message?.content || '';
+          } else {
+            throw new Error('No API key available for client-side fallback.');
+          }
         }
       }
+      
       setInsights(text || 'Não foi possível gerar insights no momento.');
     } catch (error) {
       console.error("AI Insights Error:", error);
@@ -279,8 +295,8 @@ export function AnalyticsDashboard() {
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Top Clientes</h3>
             </div>
-            <div className="h-[300px] w-full relative">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full relative" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={topCompaniesData}
@@ -317,8 +333,8 @@ export function AnalyticsDashboard() {
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Crescimento Mensal</h3>
             </div>
-            <div className="h-[300px] w-full relative">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full relative" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
@@ -361,8 +377,8 @@ export function AnalyticsDashboard() {
             </div>
             <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Consistência Semanal</h3>
           </div>
-          <div className="h-[250px] w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full relative" style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 

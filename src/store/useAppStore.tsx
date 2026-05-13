@@ -111,6 +111,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Prevent race condition in React StrictMode where an obsolete user triggers a fetch
+        if (auth.currentUser && auth.currentUser.uid !== firebaseUser.uid) {
+          return;
+        }
+        
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         try {
           const userDoc = await getDoc(userDocRef);
