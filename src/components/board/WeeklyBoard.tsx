@@ -66,7 +66,7 @@ export function WeeklyBoard() {
   };
 
   return (
-    <div className="h-full flex flex-col pt-4">
+    <div className="h-auto md:h-full flex flex-col pt-4">
       <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Agenda Semanal</h2>
@@ -84,9 +84,9 @@ export function WeeklyBoard() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-6 px-4 md:px-6">
+      <div className="flex-1 overflow-x-hidden md:overflow-x-auto pb-6 px-4 md:px-6">
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex h-full min-h-[600px] gap-4">
+          <div className="flex flex-col md:flex-row md:h-full md:min-h-[600px] gap-6 md:gap-4">
             {days.map((day) => {
               const matches = visits
                 .filter((v) => v.date === day.dateString)
@@ -95,7 +95,7 @@ export function WeeklyBoard() {
               const isToday = isSameDay(day.date, new Date());
 
               return (
-                <div key={day.dateString} className="flex h-full w-80 shrink-0 flex-col rounded-2xl bg-zinc-50/50 dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
+                <div key={day.dateString} className="flex md:h-full w-full md:w-80 shrink-0 flex-col rounded-2xl bg-zinc-50/50 dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
                   <div className={`p-4 border-b border-zinc-200/80 dark:border-dark-border transition-colors ${isToday ? 'bg-blue-50/80 dark:bg-blue-950/20' : 'bg-white dark:bg-transparent'}`}>
                     <h3 className="capitalize flex items-center justify-between">
                       <span className={`font-semibold tracking-wide ${isToday ? 'text-blue-700 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-200'}`}>
