@@ -92,20 +92,33 @@ export function AnalyticsDashboard() {
 
       let text = '';
       
-      const isVercel = window.location.hostname.includes('vercel.app');
+      const systemPrompt = `Analise esses dados de logísticas de chamados técnicos externos. 
+      Forneça 3 insights curtos e diretos em português sobre: volume, reincidência por empresa, eficiência. 
+      NÃO mencione vendas. Seja observador e criativo. Varie sua resposta se já viu dados parecidos. 
+      Dados atuias: ${dataSummary}`;
+
+      // Always try client-side first if the key is available to avoid 405 on Vercel static deployments
+      if (import.meta.env.VITE_AI_KEY) {
+        try {
+          const Groq = (await import('groq-sdk')).default;
+          const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
+          const response = await groq.chat.completions.create({
+            model: "llama-3.1-8b-instant",
+            messages: [
+              { role: "system", content: "Você é um especialista em logística de suporte técnico." },
+              { role: "user", content: systemPrompt }
+            ],
+            temperature: 0.9,
+            max_completion_tokens: 300,
+          });
+          text = response.choices[0]?.message?.content || '';
+        } catch (e) {
+          console.error("Groq client error:", e);
+        }
+      } 
       
-      // If we have VITE_AI_KEY and we are on Vercel, use client-side Groq directly to avoid 405
-      if (isVercel && import.meta.env.VITE_AI_KEY) {
-        const Groq = (await import('groq-sdk')).default;
-        const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
-        const response = await groq.chat.completions.create({
-          model: "llama-3.1-8b-instant",
-          messages: [{ role: "user", content: `Analise esses dados de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência e eficiência operacional. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}` }],
-          temperature: 0.7,
-          max_completion_tokens: 300,
-        });
-        text = response.choices[0]?.message?.content || '';
-      } else {
+      // Fallback to server if client-side failed or no key
+      if (!text) {
         try {
           const response = await fetch('/api/insights', {
             method: 'POST',
@@ -116,24 +129,12 @@ export function AnalyticsDashboard() {
           const data = await response.json();
           text = data.insights;
         } catch (apiError) {
-          // Fallback if local backend is down or not existent
-          if (import.meta.env.VITE_AI_KEY) {
-            const Groq = (await import('groq-sdk')).default;
-            const groq = new Groq({ apiKey: import.meta.env.VITE_AI_KEY, dangerouslyAllowBrowser: true });
-            const response = await groq.chat.completions.create({
-              model: "llama-3.1-8b-instant",
-              messages: [{ role: "user", content: `Analise esses dados de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência e eficiência operacional. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}` }],
-              temperature: 0.7,
-              max_completion_tokens: 300,
-            });
-            text = response.choices[0]?.message?.content || '';
-          } else {
-            throw new Error('No API key available for client-side fallback.');
-          }
+          console.error("API error:", apiError);
+          text = 'Não foi possível gerar insights. Verifique a chave de API (VITE_AI_KEY) ou o servidor.';
         }
       }
       
-      setInsights(text || 'Não foi possível gerar insights no momento.');
+      setInsights(text);
     } catch (error) {
       console.error("AI Insights Error:", error);
       setInsights('Erro ao conectar com a inteligência artificial. Se estiver no Vercel, certifique-se de configurar a variável VITE_AI_KEY.');
@@ -295,8 +296,8 @@ export function AnalyticsDashboard() {
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Top Clientes</h3>
             </div>
-            <div className="w-full relative" style={{ height: '300px' }}>
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <div className="w-full relative" style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={topCompaniesData}
@@ -333,8 +334,8 @@ export function AnalyticsDashboard() {
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Crescimento Mensal</h3>
             </div>
-            <div className="w-full relative" style={{ height: '300px' }}>
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <div className="w-full relative" style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
@@ -377,8 +378,8 @@ export function AnalyticsDashboard() {
             </div>
             <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Consistência Semanal</h3>
           </div>
-          <div className="w-full relative" style={{ height: '250px' }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div className="w-full relative" style={{ height: 250 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 

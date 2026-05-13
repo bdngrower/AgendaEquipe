@@ -25,12 +25,18 @@ async function startServer() {
 
       const groq = new Groq({ apiKey });
 
-      const prompt = `Analise esses dados de logísticas de chamados técnicos externos (suporte/manutenção) e forneça 3 insights curtos e diretos em português sobre o volume de chamados, reincidência por empresa e eficiência da equipe. NÃO mencione vendas ou oportunidades comerciais. Dados: ${dataSummary}`;
+      const prompt = `Analise esses dados de logísticas de chamados técnicos externos. 
+      Forneça 3 insights curtos e diretos em português sobre: volume, reincidência por empresa, eficiência. 
+      NÃO mencione vendas. Seja observador e criativo. Varie sua resposta se já viu dados parecidos. 
+      Dados atuais: ${dataSummary}`;
 
       const chatCompletion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: "Você é um especialista em logística de suporte técnico." },
+          { role: "user", content: prompt }
+        ],
         model: "llama-3.1-8b-instant", // A common and fast model string for Groq. Provide a solid default.
-        temperature: 0.7,
+        temperature: 0.9,
         max_completion_tokens: 300,
       });
 
