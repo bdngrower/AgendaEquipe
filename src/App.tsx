@@ -9,14 +9,15 @@ import { WeeklyBoard } from './components/board/WeeklyBoard';
 import { ReminderList } from './components/reminders/ReminderList';
 import { Summary } from './components/dashboard/Summary';
 import { AnalyticsDashboard } from './components/dashboard/AnalyticsDashboard';
+import { CompaniesManager } from './components/companies/CompaniesManager';
 import { TaskNotificationOverlay } from './components/reminders/TaskNotificationOverlay';
-import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun, ChevronLeft, ChevronRight, LayoutDashboard, ListTodo } from 'lucide-react';
+import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun, ChevronLeft, ChevronRight, LayoutDashboard, ListTodo, Building2 } from 'lucide-react';
 import { Button } from './components/ui';
 
 function MainLayout() {
   const { currentUser, authReady, dataLoaded, theme, setTheme } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'agenda' | 'reports'>('agenda');
+  const [activeTab, setActiveTab] = useState<'agenda' | 'reports' | 'companies'>('agenda');
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
 
   const toggleTheme = () => {
@@ -134,6 +135,17 @@ function MainLayout() {
                <LayoutDashboard className="h-5 w-5" />
                <span>Relatórios</span>
              </button>
+             <button
+               onClick={() => { setActiveTab('companies'); setSidebarOpen(false); }}
+               className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 ${
+                 activeTab === 'companies' 
+                   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' 
+                   : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface-hover'
+               }`}
+             >
+               <Building2 className="h-5 w-5" />
+               <span>Empresas</span>
+             </button>
            </div>
 
            <div className="flex-1 overflow-hidden">
@@ -156,7 +168,7 @@ function MainLayout() {
            </div>
         </div>
 
-        {/* Right column: Dashboard and Weekly Board */}
+        {/* Right column: Dashboard, Weekly Board or Companies */}
         <div className="flex-1 flex flex-col h-full overflow-hidden custom-scrollbar bg-zinc-50/50 dark:bg-dark-bg border-l border-transparent transition-colors duration-200">
            {activeTab === 'agenda' ? (
              <>
@@ -167,7 +179,7 @@ function MainLayout() {
                  <WeeklyBoard />
                </div>
              </>
-           ) : (
+           ) : activeTab === 'reports' ? (
              <div className="flex-1 overflow-y-auto p-4 lg:p-8 pt-16 lg:pt-8">
                <div className="max-w-6xl mx-auto space-y-8">
                  <div>
@@ -176,6 +188,10 @@ function MainLayout() {
                  </div>
                  <AnalyticsDashboard />
                </div>
+             </div>
+           ) : (
+             <div className="flex-1 overflow-y-auto pt-16 lg:pt-8">
+               <CompaniesManager />
              </div>
            )}
         </div>

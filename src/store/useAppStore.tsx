@@ -24,6 +24,8 @@ interface AppContextType extends AppData {
   deleteVisit: (id: string) => void;
   moveVisit: (id: string, newDate: string) => void;
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => Promise<string>;
+  updateCompany: (id: string, updates: Partial<Company>) => void;
+  deleteCompany: (id: string) => void;
   authReady: boolean;
   dataLoaded: boolean;
   theme: 'light' | 'dark';
@@ -262,6 +264,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addCompany = async (company: Omit<Company, 'id' | 'createdAt'>): Promise<string> => {
+    // Check for existing company with same name to prevent duplicates
+    const existing = data.companies.find(c => c.name.toLowerCase() === company.name.toLowerCase());
+    if (existing) return existing.id;
+
     const id = uuidv4();
     const newCompany: Company = {
       ...company,
@@ -274,6 +280,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `companies/${id}`);
       return id;
+    }
+  };
+
+  const updateCompany = async (id: string, updates: Partial<Company>) => {
+    try {
+      await updateDoc(doc(db, 'companies', id), updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `companies/${id}`);
+    }
+  };
+
+  const deleteCompany = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'companies', id));
+      
+      // Optional: Logic to handle orphan visits? 
+      // For now we just delete the company.
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `companies/${id}`);
     }
   };
 
@@ -302,6 +327,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         deleteVisit,
         moveVisit,
         addCompany,
+        updateCompany,
+        deleteCompany,
         authReady,
         dataLoaded,
         theme,
