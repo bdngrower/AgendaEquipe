@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Reminder } from '../../types';
 import { format, parseISO, isPast, differenceInMinutes, isToday, addMinutes } from 'date-fns';
@@ -10,6 +10,36 @@ export function TaskNotificationOverlay() {
   const { reminders, updateReminder } = useAppStore();
   const [activeNotification, setActiveNotification] = useState<Reminder | null>(null);
   const [notifiedIds, setNotifiedIds] = useState<Set<string>>(new Set());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopNotificationSound = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+  };
+
+  const playNotificationSound = () => {
+    try {
+      // Parar qualquer som anterior antes de começar um novo
+      stopNotificationSound();
+      
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 0.5;
+      audio.loop = true; // REPETIR O SOM
+      audioRef.current = audio;
+      audio.play().catch(e => console.log('Audio play blocked by browser:', e));
+    } catch (error) {
+      console.error('Error playing notification sound:', error);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopNotificationSound();
+    };
+  }, []);
 
   useEffect(() => {
     const checkReminders = () => {
@@ -27,6 +57,7 @@ export function TaskNotificationOverlay() {
       if (dueReminder) {
         setActiveNotification(dueReminder);
         setNotifiedIds(prev => new Set(prev).add(dueReminder.id));
+        playNotificationSound();
       }
     };
 
@@ -36,6 +67,7 @@ export function TaskNotificationOverlay() {
 
   const handleComplete = () => {
     if (activeNotification) {
+      stopNotificationSound();
       updateReminder(activeNotification.id, { isCompleted: true });
       setActiveNotification(null);
     }
@@ -43,6 +75,7 @@ export function TaskNotificationOverlay() {
 
   const handleSnooze = () => {
     if (activeNotification) {
+      stopNotificationSound();
       const rDate = parseISO(`${activeNotification.date}T${activeNotification.time}`);
       const newDate = addMinutes(rDate, 15);
       
@@ -79,7 +112,10 @@ export function TaskNotificationOverlay() {
                   <span className="font-bold tracking-tight">Lembrete Agora!</span>
                 </div>
                 <button 
-                  onClick={() => setActiveNotification(null)}
+                  onClick={() => {
+                    stopNotificationSound();
+                    setActiveNotification(null);
+                  }}
                   className="text-white/80 hover:text-white transition-colors"
                 >
                   <X className="h-5 w-5" />
