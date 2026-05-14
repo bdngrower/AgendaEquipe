@@ -38,7 +38,12 @@ function MainLayout() {
   if (!authReady || !dataLoaded) {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-dark-bg font-sans flex-col gap-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img src="/logo.png" alt="ZimTask" className="h-8 w-8 object-contain" />
+          </div>
+        </div>
         <div className="text-sm text-zinc-500 font-medium animate-pulse">Carregando dados...</div>
       </div>
     );
@@ -85,10 +90,20 @@ function MainLayout() {
       <div className="flex w-full h-full">
         {/* Left column: Lembretes */}
         <div className={`fixed inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 ${desktopSidebarOpen ? 'lg:flex w-80 lg:w-96' : 'lg:hidden w-0'} flex-col border-r border-zinc-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-sm z-50 transition-all duration-300 lg:transition-colors lg:duration-200 print:hidden`}>
-           <div className="p-5 border-b border-zinc-200 dark:border-dark-border flex items-center justify-between transition-colors duration-200">
+            <div className="p-5 border-b border-zinc-200 dark:border-dark-border flex items-center justify-between transition-colors duration-200">
              <div className="flex items-center gap-3">
-               <div className="bg-blue-600 p-2 rounded-lg text-white shadow-sm ring-1 ring-blue-700/50">
-                 <Calendar className="h-5 w-5" />
+               <div className="bg-transparent overflow-hidden">
+                 <img src="/logo.png" alt="ZimTask Logo" className="h-8 w-8 object-contain" onError={(e) => {
+                   // Fallback para ícone se a imagem falhar
+                   e.currentTarget.style.display = 'none';
+                   const parent = e.currentTarget.parentElement;
+                   if (parent) {
+                     parent.className = "bg-blue-600 p-2 rounded-lg text-white shadow-sm ring-1 ring-blue-700/50";
+                     const icon = document.createElement('div');
+                     icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>';
+                     parent.appendChild(icon.firstChild!);
+                   }
+                 }} />
                </div>
                <span className="font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 text-lg">ZimTask</span>
              </div>
