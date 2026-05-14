@@ -14,7 +14,7 @@ const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
 type DateFilterType = 'all' | 'this_year' | 'last_6_months' | 'this_month';
 
 export function AnalyticsDashboard() {
-  const { visits, companies } = useAppStore();
+  const { visits, companies, theme } = useAppStore();
   const [isExporting, setIsExporting] = useState(false);
   const [insights, setInsights] = useState<string>('');
   const [loadingInsights, setLoadingInsights] = useState(false);
@@ -65,26 +65,39 @@ export function AnalyticsDashboard() {
     const sortedVisits = [...filteredVisits].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     sortedVisits.forEach(v => {
-      // Utilizar o meio-dia para evitar problemas de fuso horário ao fazer o parse
       const d = new Date(v.date + 'T12:00:00');
       
       const dayOfWeek = d.getDay(); // 0 = Dom, 1 = Seg ... 6 = Sab
       const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
       
-      // Fixar a base na Segunda-feira para agrupar idêntico pra todos da mesma semana
       const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diffToMonday);
       const friday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 4);
       
-      // Calcular com base na segunda-feira garante contagem exata sem duplicar chaves
-      const monthIdx = monday.getMonth();
-      const weekOfMonth = Math.ceil(monday.getDate() / 7);
+      const day = monday.getDate().toString().padStart(2, '0');
+      const month = (monday.getMonth() + 1).toString().padStart(2, '0');
+      const fridayDay = friday.getDate().toString().padStart(2, '0');
+      const fridayMonth = (friday.getMonth() + 1).toString().padStart(2, '0');
       
-      const weekLabel = `Semana ${weekOfMonth} de ${monthNames[monthIdx]} {dia ${monday.getDate()} a ${friday.getDate()}}`;
+      // Label mais intuitivo focado no intervalo de datas
+      const weekLabel = `Período ${day}/${month} a ${fridayDay}/${fridayMonth}`;
       
       weeks[weekLabel] = (weeks[weekLabel] || 0) + 1;
     });
 
-    return Object.entries(weeks).map(([name, total]) => ({ name, total })).slice(-4);
+    return Object.entries(weeks)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => {
+        // Ordenação por data (extraindo o primeiro dia do label)
+        const dateA = a.name.match(/Período (\d+)\/(\d+)/);
+        const dateB = b.name.match(/Período (\d+)\/(\d+)/);
+        if (dateA && dateB) {
+           const dA = parseInt(dateA[2]) * 100 + parseInt(dateA[1]);
+           const dB = parseInt(dateB[2]) * 100 + parseInt(dateB[1]);
+           return dA - dB;
+        }
+        return 0;
+      })
+      .slice(-5);
   }, [filteredVisits]);
 
   // 3. Agendamentos Mensais
@@ -296,9 +309,9 @@ export function AnalyticsDashboard() {
         </div>
       </div>
 
-      <div id="analytics-content" className="space-y-6" style={{ backgroundColor: '#ffffff', color: '#18181b', minWidth: isExporting ? '1000px' : 'auto' }}>
+      <div id="analytics-content" className="space-y-6">
         {/* Insights AI */}
-        <div className="ai-card p-6 rounded-3xl text-white shadow-xl overflow-hidden relative" style={{ background: '#2563eb' }}>
+        <div className="ai-card p-6 rounded-3xl text-white shadow-xl overflow-hidden relative bg-blue-600 dark:bg-blue-700">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Sparkles className="h-24 w-24 rotate-12" />
           </div>
@@ -332,14 +345,14 @@ export function AnalyticsDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Empresas */}
-          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
+          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300">
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg print:bg-transparent" style={{ backgroundColor: '#fffbeb' }}>
+              <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg print:bg-transparent">
                 <Trophy className="h-5 w-5 text-amber-500" />
               </div>
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Top Clientes</h3>
+              <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Top Clientes</h3>
             </div>
-            <div className="w-full relative" style={{ height: 300 }}>
+            <div className="w-full h-[300px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -357,11 +370,13 @@ export function AnalyticsDashboard() {
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                      backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff', 
                       borderRadius: '12px',
                       border: 'none',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      color: theme === 'dark' ? '#f4f4f5' : '#18181b'
                     }}
+                    itemStyle={{ color: theme === 'dark' ? '#f4f4f5' : '#18181b' }}
                   />
                   <Legend verticalAlign="bottom" height={36}/>
                 </PieChart>
@@ -370,17 +385,17 @@ export function AnalyticsDashboard() {
           </div>
 
           {/* Agendamentos Mensais */}
-          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
+          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300">
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg print:bg-transparent" style={{ backgroundColor: '#eff6ff' }}>
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg print:bg-transparent">
                 <TrendingUp className="h-5 w-5 text-blue-500" />
               </div>
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Crescimento Mensal</h3>
+              <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Crescimento Mensal</h3>
             </div>
-            <div className="w-full relative" style={{ height: 300 }}>
+            <div className="w-full h-[300px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#27272a' : '#f1f5f9'} />
                   <XAxis 
                     dataKey="name" 
                     axisLine={false} 
@@ -393,12 +408,13 @@ export function AnalyticsDashboard() {
                     tick={{ fontSize: 12, fill: '#94a3b8' }}
                   />
                   <Tooltip 
-                    cursor={{ fill: '#f8fafc' }}
+                    cursor={{ fill: theme === 'dark' ? '#27272a' : '#f8fafc' }}
                     contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                      backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff', 
                       borderRadius: '12px',
                       border: 'none',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      color: theme === 'dark' ? '#f4f4f5' : '#18181b'
                     }}
                   />
                   <Bar 
@@ -414,17 +430,17 @@ export function AnalyticsDashboard() {
         </div>
 
         {/* Visão Semanal */}
-        <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300" style={{ backgroundColor: '#ffffff', borderColor: '#e4e4e7' }}>
+        <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300">
           <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg print:bg-transparent" style={{ backgroundColor: '#faf5ff' }}>
+            <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg print:bg-transparent">
               <Calendar className="h-5 w-5 text-purple-500" />
             </div>
-            <h3 className="font-bold text-zinc-900 dark:text-zinc-100" style={{ color: '#18181b' }}>Consistência Semanal</h3>
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Consistência Semanal</h3>
           </div>
-          <div className="w-full relative" style={{ height: 250 }}>
+          <div className="w-full h-[250px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#27272a' : '#f1f5f9'} />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
@@ -438,10 +454,11 @@ export function AnalyticsDashboard() {
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                    backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff', 
                     borderRadius: '12px',
                     border: 'none',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    color: theme === 'dark' ? '#f4f4f5' : '#18181b'
                   }}
                 />
                 <Line 

@@ -14,25 +14,13 @@ import { Calendar, CheckSquare, Settings, Menu, X, Bell, Moon, Sun, ChevronLeft,
 import { Button } from './components/ui';
 
 function MainLayout() {
-  const { currentUser, authReady, dataLoaded } = useAppStore();
+  const { currentUser, authReady, dataLoaded, theme, setTheme } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'agenda' | 'reports'>('agenda');
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
-  });
-
-  React.useEffect(() => {
-    localStorage.setItem('theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(t => t === 'light' ? 'dark' : 'light');
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   if (!authReady || !dataLoaded) {

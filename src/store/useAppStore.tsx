@@ -26,6 +26,8 @@ interface AppContextType extends AppData {
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => Promise<string>;
   authReady: boolean;
   dataLoaded: boolean;
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -86,6 +88,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     currentUser: null,
   });
   const [authReady, setAuthReady] = useState(false);
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+  });
   const [collectionsLoaded, setCollectionsLoaded] = useState({
     users: false,
     companies: false,
@@ -272,6 +277,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const setTheme = (newTheme: 'light' | 'dark') => {
+    setThemeState(newTheme);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -286,6 +304,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addCompany,
         authReady,
         dataLoaded,
+        theme,
+        setTheme,
       }}
     >
       {children}
