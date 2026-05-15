@@ -37,6 +37,11 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-zinc-400 dark:bg-zinc-700;
   }
+
+  .vertical-text {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
 }
 
 body {

@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
-import { format, addDays, startOfWeek, isSameDay, parseISO } from 'date-fns';
+import { DragDropContext, Droppable, DropResult, DragStart } from '@hello-pangea/dnd';
+import { format, addDays, startOfWeek, isSameDay, parseISO, addWeeks, subWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAppStore } from '../../store/useAppStore';
 import { VisitCard } from './VisitCard';
 import { VisitModal } from './VisitModal';
 import { Visit, Status } from '../../types';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../ui';
 
-const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]; // Monday to Sunday manually sorted because date-fns week starts on Sunday traditionally, but we want Mon-Sun. Let's handle it by getting Monday and adding days.
 export function WeeklyBoard() {
   const { visits, updateVisit, moveVisit } = useAppStore();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isDragging, setIsDragging] = useState(false);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,7 +32,12 @@ export function WeeklyBoard() {
     };
   });
 
+  const onDragStart = (start: DragStart) => {
+    setIsDragging(true);
+  };
+
   const onDragEnd = (result: DropResult) => {
+    setIsDragging(false);
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
@@ -44,12 +49,23 @@ export function WeeklyBoard() {
       return;
     }
 
-    // Since we sort mostly by time visually, a pure Reorder in the same column doesn't 
-    // update the strict DB 'order' unless we implement an 'order' field. 
-    // Usually, sorting by time is better for agendas. 
-    // But if moved to a different day, update the date.
+    // Handle dropping in "Next Week" or "Prev Week" zones
+    if (destination.droppableId === 'next-week-zone' || destination.droppableId === 'prev-week-zone') {
+      const visit = visits.find(v => v.id === draggableId);
+      if (visit) {
+        const weeksToAdd = destination.droppableId === 'next-week-zone' ? 1 : -1;
+        const newDate = addWeeks(parseISO(visit.date), weeksToAdd);
+        moveVisit(draggableId, format(newDate, 'yyyy-MM-dd'));
+        
+        // Switch the board view to the new week to show the change
+        setCurrentDate(addWeeks(currentDate, weeksToAdd));
+      }
+      return;
+    }
+
+    // Normal day-to-day move
     if (destination.droppableId !== source.droppableId) {
-      moveVisit(draggableId, destination.droppableId); // newdate is droppableId
+      moveVisit(draggableId, destination.droppableId);
     }
   };
 
@@ -75,33 +91,55 @@ export function WeeklyBoard() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(addDays(currentDate, -7))}>Anterior</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>Anterior</Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Hoje</Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(addDays(currentDate, 7))}>Próxima</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>Próxima</Button>
           <Button size="sm" onClick={() => handleOpenNewVisit()}>
             <Plus className="mr-2 h-4 w-4 hidden sm:inline" /> Nova Visita
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto md:overflow-y-hidden overflow-x-hidden md:overflow-x-auto pb-6 px-4 md:px-6">
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex flex-col md:flex-row pb-10 md:pb-0 md:h-full md:min-h-[600px] gap-6 md:gap-4">
+      <div className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-auto pb-6 px-4 md:px-6 relative">
+        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+          <div className="flex flex-col lg:grid lg:grid-cols-5 pb-10 lg:pb-0 lg:h-full lg:min-h-[600px] gap-6 lg:gap-3 xl:gap-4 min-w-[1200px] lg:min-w-0">
+            
+            {/* "Previous Week" Drop Zone - Only visible during drag */}
+            {isDragging && (
+              <Droppable droppableId="prev-week-zone">
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`fixed left-0 top-1/2 -translate-y-1/2 w-16 h-64 z-[60] flex flex-col items-center justify-center rounded-r-3xl border-2 border-dashed transition-all duration-300 ${
+                      snapshot.isDraggingOver 
+                        ? 'bg-blue-600/20 border-blue-500 scale-110' 
+                        : 'bg-white/10 dark:bg-zinc-800/20 border-zinc-300/50 dark:border-zinc-700/50'
+                    }`}
+                  >
+                    <ChevronLeft className={`h-8 w-8 ${snapshot.isDraggingOver ? 'text-blue-500 animate-pulse' : 'text-zinc-400'}`} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest vertical-text mt-2 text-zinc-400">Semana Anterior</span>
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            )}
+
             {days.map((day) => {
               const matches = visits
                 .filter((v) => v.date === day.dateString)
-                .sort((a, b) => a.time.localeCompare(b.time)); // sort by time
+                .sort((a, b) => a.time.localeCompare(b.time));
 
               const isToday = isSameDay(day.date, new Date());
 
               return (
-                <div key={day.dateString} className="flex md:h-full w-full md:w-80 shrink-0 flex-col rounded-2xl bg-zinc-50/50 dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
+                <div key={day.dateString} className="flex lg:h-full w-full lg:w-auto flex-col rounded-2xl bg-zinc-50/50 dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
                   <div className={`p-4 border-b border-zinc-200/80 dark:border-dark-border transition-colors ${isToday ? 'bg-blue-50/80 dark:bg-blue-950/20' : 'bg-white dark:bg-transparent'}`}>
                     <h3 className="capitalize flex items-center justify-between">
-                      <span className={`font-semibold tracking-wide ${isToday ? 'text-blue-700 dark:text-blue-400' : 'text-zinc-700 dark:text-zinc-200'}`}>
+                      <span className={`font-semibold tracking-wide ${isToday ? 'text-blue-700 dark:text-blue-400 text-sm xl:text-base' : 'text-zinc-700 dark:text-zinc-200 text-sm xl:text-base'}`}>
                         {day.title}
                       </span>
-                      <span className={`text-xs font-bold tracking-wider px-2.5 py-1 rounded-full ${isToday ? 'bg-blue-600 text-white shadow-sm' : 'bg-zinc-100 dark:bg-dark-surface-hover text-zinc-500 dark:text-zinc-400'}`}>
+                      <span className={`text-[10px] xl:text-xs font-bold tracking-wider px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-full ${isToday ? 'bg-blue-600 text-white shadow-sm' : 'bg-zinc-100 dark:bg-dark-surface-hover text-zinc-500 dark:text-zinc-400'}`}>
                         {day.dayAndMonth}
                       </span>
                     </h3>
@@ -112,7 +150,7 @@ export function WeeklyBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 md:overflow-y-auto min-h-[150px] p-3 transition-colors ${
+                        className={`flex-1 lg:overflow-y-auto min-h-[150px] p-2 xl:p-3 transition-colors ${
                           snapshot.isDraggingOver ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''
                         }`}
                       >
@@ -128,9 +166,9 @@ export function WeeklyBoard() {
                         
                         <button 
                           onClick={() => handleOpenNewVisit(day.dateString)}
-                          className="w-full py-2.5 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-xl transition-all duration-200 mt-2 border border-transparent border-dashed hover:border-blue-200 dark:hover:border-blue-900/50"
+                          className="w-full py-2 flex items-center justify-center text-xs font-medium text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-xl transition-all duration-200 mt-2 border border-transparent border-dashed hover:border-blue-200 dark:hover:border-blue-900/50"
                         >
-                          <Plus className="mr-1.5 h-4 w-4" /> Adicionar
+                          <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
                         </button>
                       </div>
                     )}
@@ -138,6 +176,28 @@ export function WeeklyBoard() {
                 </div>
               );
             })}
+
+            {/* "Next Week" Drop Zone - Only visible during drag */}
+            {isDragging && (
+              <Droppable droppableId="next-week-zone">
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`fixed right-0 top-1/2 -translate-y-1/2 w-16 h-64 z-[60] flex flex-col items-center justify-center rounded-l-3xl border-2 border-dashed transition-all duration-300 ${
+                      snapshot.isDraggingOver 
+                        ? 'bg-blue-600/20 border-blue-500 scale-110' 
+                        : 'bg-white/10 dark:bg-zinc-800/20 border-zinc-300/50 dark:border-zinc-700/50'
+                    }`}
+                  >
+                    <ChevronRight className={`h-8 w-8 ${snapshot.isDraggingOver ? 'text-blue-500 animate-pulse' : 'text-zinc-400'}`} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest vertical-text mt-2 text-zinc-400">Próxima Semana</span>
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            )}
+
           </div>
         </DragDropContext>
       </div>
@@ -151,3 +211,4 @@ export function WeeklyBoard() {
     </div>
   );
 }
+
