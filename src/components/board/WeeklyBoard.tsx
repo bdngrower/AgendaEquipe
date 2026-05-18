@@ -8,6 +8,7 @@ import { VisitModal } from './VisitModal';
 import { Visit, Status } from '../../types';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../ui';
+import { cn } from '../../lib/utils';
 
 export function WeeklyBoard() {
   const { visits, updateVisit, moveVisit } = useAppStore();
