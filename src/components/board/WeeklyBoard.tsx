@@ -92,9 +92,9 @@ export function WeeklyBoard() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}>Anterior</Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Hoje</Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>Próxima</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))} title="Semana Anterior">Anterior</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())} title="Ir para Hoje">Hoje</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))} title="Próxima Semana">Próxima</Button>
           <Button size="sm" onClick={() => handleOpenNewVisit()}>
             <Plus className="mr-2 h-4 w-4 hidden sm:inline" /> Nova Visita
           </Button>
