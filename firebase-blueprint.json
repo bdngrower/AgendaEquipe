@@ -44,6 +44,7 @@
         "status": { "type": "string", "enum": ["Pendente", "Em andamento", "Concluído", "Cancelado"] },
         "notes": { "type": "string" },
         "contact": { "type": "string" },
+        "ticketNumber": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["customerName", "date", "time", "status", "notes", "createdAt"]
