@@ -100,30 +100,36 @@ export function WeeklyBoard() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-auto pb-6 px-4 md:px-6 relative">
+      <div className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-auto scroll-smooth pb-6 px-4 md:px-6 relative custom-scrollbar">
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="flex flex-col lg:grid lg:grid-cols-5 pb-10 lg:pb-0 lg:h-full lg:min-h-[600px] gap-6 lg:gap-3 xl:gap-4 min-w-[1200px] lg:min-w-0">
+          <div className="flex flex-col lg:grid lg:grid-cols-5 pb-10 lg:pb-0 lg:h-full lg:min-h-[500px] gap-6 lg:gap-4 min-w-[1200px]">
             
-            {/* "Previous Week" Drop Zone - Only visible during drag */}
-            {isDragging && (
+            {/* "Previous Week" Drop Zone - Persistent to prevent Invariant errors */}
+            <div 
+              className={cn(
+                "fixed left-0 top-1/2 -translate-y-1/2 w-16 h-64 z-[60] transition-all duration-300 pointer-events-none",
+                isDragging ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-full"
+              )}
+            >
               <Droppable droppableId="prev-week-zone">
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`fixed left-0 top-1/2 -translate-y-1/2 w-16 h-64 z-[60] flex flex-col items-center justify-center rounded-r-3xl border-2 border-dashed transition-all duration-300 ${
+                    className={cn(
+                      "h-full flex flex-col items-center justify-center rounded-r-3xl border-2 border-dashed pointer-events-auto shadow-2xl transition-all",
                       snapshot.isDraggingOver 
-                        ? 'bg-blue-600/20 border-blue-500 scale-110' 
-                        : 'bg-white/10 dark:bg-zinc-800/20 border-zinc-300/50 dark:border-zinc-700/50'
-                    }`}
+                        ? 'bg-blue-600 text-white border-blue-400 scale-105' 
+                        : 'bg-white/95 dark:bg-zinc-900/95 border-zinc-300 dark:border-zinc-800'
+                    )}
                   >
-                    <ChevronLeft className={`h-8 w-8 ${snapshot.isDraggingOver ? 'text-blue-500 animate-pulse' : 'text-zinc-400'}`} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest vertical-text mt-2 text-zinc-400">Semana Anterior</span>
+                    <ChevronLeft className={cn("h-8 w-8", snapshot.isDraggingOver ? "text-white animate-pulse" : "text-zinc-400")} />
+                    <span className={cn("text-[10px] font-bold uppercase tracking-widest vertical-text mt-2", snapshot.isDraggingOver ? "text-white" : "text-zinc-400")}>Semana Anterior</span>
                     {provided.placeholder}
                   </div>
                 )}
               </Droppable>
-            )}
+            </div>
 
             {days.map((day) => {
               const matches = visits
@@ -133,13 +139,22 @@ export function WeeklyBoard() {
               const isToday = isSameDay(day.date, new Date());
 
               return (
-                <div key={day.dateString} className="flex lg:h-full w-full lg:w-auto flex-col rounded-2xl bg-zinc-50/50 dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
-                  <div className={`p-4 border-b border-zinc-200/80 dark:border-dark-border transition-colors ${isToday ? 'bg-blue-50/80 dark:bg-blue-950/20' : 'bg-white dark:bg-transparent'}`}>
+                <div key={day.dateString} className="flex lg:h-full w-full lg:w-auto flex-col rounded-2xl bg-white dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
+                  <div className={cn(
+                    "p-3 xl:p-4 border-b border-zinc-200/80 dark:border-dark-border transition-colors",
+                    isToday ? "bg-blue-50/80 dark:bg-blue-950/20" : "bg-white dark:bg-transparent"
+                  )}>
                     <h3 className="capitalize flex items-center justify-between">
-                      <span className={`font-semibold tracking-wide ${isToday ? 'text-blue-700 dark:text-blue-400 text-sm xl:text-base' : 'text-zinc-700 dark:text-zinc-200 text-sm xl:text-base'}`}>
+                      <span className={cn(
+                        "font-semibold tracking-wide",
+                        isToday ? "text-blue-700 dark:text-blue-400 text-sm xl:text-base" : "text-zinc-700 dark:text-zinc-200 text-sm xl:text-base"
+                      )}>
                         {day.title}
                       </span>
-                      <span className={`text-[10px] xl:text-xs font-bold tracking-wider px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-full ${isToday ? 'bg-blue-600 text-white shadow-sm' : 'bg-zinc-100 dark:bg-dark-surface-hover text-zinc-500 dark:text-zinc-400'}`}>
+                      <span className={cn(
+                        "text-[10px] xl:text-xs font-bold tracking-wider px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-full",
+                        isToday ? "bg-blue-600 text-white shadow-sm" : "bg-zinc-100 dark:bg-dark-surface-hover text-zinc-500 dark:text-zinc-400"
+                      )}>
                         {day.dayAndMonth}
                       </span>
                     </h3>
@@ -150,23 +165,26 @@ export function WeeklyBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 lg:overflow-y-auto min-h-[150px] p-2 xl:p-3 transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''
-                        }`}
+                        className={cn(
+                          "flex-1 lg:overflow-y-auto min-h-[250px] p-2 transition-colors custom-scrollbar",
+                          snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-blue-950/10" : "bg-white dark:bg-dark-surface"
+                        )}
                       >
-                        {matches.map((visit, index) => (
-                          <VisitCard
-                            key={visit.id}
-                            visit={visit}
-                            index={index}
-                            onClick={handleCardClick}
-                          />
-                        ))}
+                        <div className="space-y-3">
+                          {matches.map((visit, index) => (
+                            <VisitCard
+                              key={visit.id}
+                              visit={visit}
+                              index={index}
+                              onClick={handleCardClick}
+                            />
+                          ))}
+                        </div>
                         {provided.placeholder}
                         
                         <button 
                           onClick={() => handleOpenNewVisit(day.dateString)}
-                          className="w-full py-2 flex items-center justify-center text-xs font-medium text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-xl transition-all duration-200 mt-2 border border-transparent border-dashed hover:border-blue-200 dark:hover:border-blue-900/50"
+                          className="w-full py-2.5 flex items-center justify-center text-xs font-medium text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-xl transition-all duration-200 mt-4 border border-transparent border-dashed hover:border-blue-200 dark:hover:border-blue-900/50"
                         >
                           <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
                         </button>
@@ -177,26 +195,32 @@ export function WeeklyBoard() {
               );
             })}
 
-            {/* "Next Week" Drop Zone - Only visible during drag */}
-            {isDragging && (
+            {/* "Next Week" Drop Zone - Persistent to prevent Invariant errors */}
+            <div 
+              className={cn(
+                "fixed right-0 top-1/2 -translate-y-1/2 w-16 h-64 z-[60] transition-all duration-300 pointer-events-none",
+                isDragging ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full"
+              )}
+            >
               <Droppable droppableId="next-week-zone">
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`fixed right-0 top-1/2 -translate-y-1/2 w-16 h-64 z-[60] flex flex-col items-center justify-center rounded-l-3xl border-2 border-dashed transition-all duration-300 ${
+                    className={cn(
+                      "h-full flex flex-col items-center justify-center rounded-l-3xl border-2 border-dashed pointer-events-auto shadow-2xl transition-all",
                       snapshot.isDraggingOver 
-                        ? 'bg-blue-600/20 border-blue-500 scale-110' 
-                        : 'bg-white/10 dark:bg-zinc-800/20 border-zinc-300/50 dark:border-zinc-700/50'
-                    }`}
+                        ? 'bg-blue-600 text-white border-blue-400 scale-105' 
+                        : 'bg-white/95 dark:bg-zinc-900/95 border-zinc-300 dark:border-zinc-800'
+                    )}
                   >
-                    <ChevronRight className={`h-8 w-8 ${snapshot.isDraggingOver ? 'text-blue-500 animate-pulse' : 'text-zinc-400'}`} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest vertical-text mt-2 text-zinc-400">Próxima Semana</span>
+                    <ChevronRight className={cn("h-8 w-8", snapshot.isDraggingOver ? "text-white animate-pulse" : "text-zinc-400")} />
+                    <span className={cn("text-[10px] font-bold uppercase tracking-widest vertical-text mt-2", snapshot.isDraggingOver ? "text-white" : "text-zinc-400")}>Próxima Semana</span>
                     {provided.placeholder}
                   </div>
                 )}
               </Droppable>
-            )}
+            </div>
 
           </div>
         </DragDropContext>
