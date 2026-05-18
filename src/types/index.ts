@@ -39,6 +39,7 @@ export interface Visit {
   isEmergency?: boolean;
   notes: string;
   contact?: string;
+  ticketNumber?: string;
   createdAt: string;
 }
 

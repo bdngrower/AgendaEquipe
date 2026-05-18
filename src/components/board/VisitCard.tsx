@@ -1,7 +1,7 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Visit } from '../../types';
-import { CheckCircle2, Circle, Clock, User as UserIcon, FileText } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, User as UserIcon, FileText, Hash } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -71,11 +71,21 @@ export function VisitCard({ visit, index, onClick }: VisitCardProps) {
           </div>
           
           <div className="space-y-2 text-xs text-zinc-600 dark:text-zinc-400">
-            <div className="flex items-center gap-2">
-              <div className="p-1 bg-blue-50 dark:bg-blue-950/30 rounded text-blue-500 dark:text-blue-400">
-                <Clock className="h-3 w-3" />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1 bg-blue-50 dark:bg-blue-950/30 rounded text-blue-500 dark:text-blue-400">
+                  <Clock className="h-3 w-3" />
+                </div>
+                <span className="font-medium tracking-wide">{visit.time}</span>
               </div>
-              <span className="font-medium tracking-wide">{visit.time}</span>
+              {visit.ticketNumber && (
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-purple-50 dark:bg-purple-950/30 rounded text-purple-500 dark:text-purple-400">
+                    <Hash className="h-3 w-3" />
+                  </div>
+                  <span className="font-medium tracking-wide">Chamado: {visit.ticketNumber}</span>
+                </div>
+              )}
             </div>
             
             {visit.notes && (

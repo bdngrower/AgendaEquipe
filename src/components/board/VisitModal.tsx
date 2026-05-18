@@ -206,11 +206,22 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">Status</label>
-          <Select name="status" value={formData.status || 'Pendente'} onChange={handleChange}>
-            {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">Status</label>
+            <Select name="status" value={formData.status || 'Pendente'} onChange={handleChange}>
+              {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+            </Select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">Chamado (Opcional)</label>
+            <Input 
+              name="ticketNumber" 
+              value={formData.ticketNumber || ''} 
+              onChange={handleChange} 
+              placeholder="Ex: 0526-000195" 
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-2 my-2">
