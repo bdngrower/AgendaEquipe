@@ -214,10 +214,32 @@ export function AnalyticsDashboard() {
     if (loadingInsights || filteredVisits.length === 0) return;
     setLoadingInsights(true);
     try {
+      // Calcular distribuição por dias da semana
+      const daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+      const dailyDistribution: Record<string, number> = {
+        'Segunda-feira': 0, 'Terça-feira': 0, 'Quarta-feira': 0, 'Quinta-feira': 0, 'Sexta-feira': 0
+      };
+      
+      filteredVisits.forEach(v => {
+        const d = new Date(v.date + 'T12:00:00');
+        const dayName = daysOfWeek[d.getDay()];
+        if (dailyDistribution[dayName] !== undefined) {
+          dailyDistribution[dayName]++;
+        }
+      });
+      
+      const dailySummaryStr = Object.entries(dailyDistribution)
+        .filter(([_, count]) => count > 0)
+        .map(([day, count]) => `${day}: ${count} chamados`)
+        .join(', ');
+
       const dataSummary = `
-        Total visits: ${filteredVisits.length}
-        Top customers: ${topCompaniesData.map(c => `${c.name} (${c.value} visits)`).join(', ')}
-        Recent weekly trends: ${weeklyData.map(w => `${w.name}: ${w.total}`).join(', ')}
+        Total de chamados no período: ${filteredVisits.length}
+        Empresas com mais chamados recorrentes: ${topCompaniesData.map(c => `${c.name} (${c.value} chamados)`).join(', ')}
+        Distribuição semanal recente: ${weeklyData.map(w => `${w.name}: ${w.total} chamados`).join(' | ')}
+        Distribuição por dia da semana no período: ${dailySummaryStr}
+        SLA Médio de Agendamento (tempo até agendar): ${avgScheduleHours} horas
+        SLA Médio de Resolução (tempo até finalizar): ${avgCompleteHours} horas
       `;
 
       let text = '';
@@ -279,8 +301,8 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
               { role: "system", content: "Você é um especialista em logística de suporte técnico." },
               { role: "user", content: systemPrompt }
             ],
-            temperature: 0.9,
-            max_completion_tokens: 300,
+            temperature: 0.2,
+            max_completion_tokens: 350,
           });
           text = response.choices[0]?.message?.content || '';
         } catch (e) {
@@ -294,7 +316,7 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
           const response = await fetch('/api/insights', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dataSummary })
+            body: JSON.stringify({ dataSummary, systemPrompt })
           });
           if (!response.ok) throw new Error('API server error');
           const data = await response.json();

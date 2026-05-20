@@ -16,7 +16,7 @@ async function startServer() {
   // API Route for AI Insights
   app.post("/api/insights", async (req, res) => {
     try {
-      const { dataSummary } = req.body;
+      const { dataSummary, systemPrompt } = req.body;
       const apiKey = process.env.VITE_AI_KEY || process.env.AI_KEY;
 
       if (!apiKey) {
@@ -25,19 +25,14 @@ async function startServer() {
 
       const groq = new Groq({ apiKey });
 
-      const prompt = `Analise esses dados de logísticas de chamados técnicos externos. 
-      Forneça 3 insights curtos e diretos em português sobre: volume, reincidência por empresa, eficiência. 
-      NÃO mencione vendas. Seja observador e criativo. Varie sua resposta se já viu dados parecidos. 
-      Dados atuais: ${dataSummary}`;
-
       const chatCompletion = await groq.chat.completions.create({
         messages: [
           { role: "system", content: "Você é um especialista em logística de suporte técnico." },
-          { role: "user", content: prompt }
+          { role: "user", content: systemPrompt || dataSummary }
         ],
-        model: "llama-3.1-8b-instant", // A common and fast model string for Groq. Provide a solid default.
-        temperature: 0.9,
-        max_completion_tokens: 300,
+        model: "llama-3.1-8b-instant",
+        temperature: 0.2,
+        max_completion_tokens: 350,
       });
 
       const text = chatCompletion.choices[0]?.message?.content || "";
