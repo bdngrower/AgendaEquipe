@@ -238,8 +238,8 @@ export function AnalyticsDashboard() {
         Empresas com mais chamados recorrentes: ${topCompaniesData.map(c => `${c.name} (${c.value} chamados)`).join(', ')}
         Distribuição semanal recente: ${weeklyData.map(w => `${w.name}: ${w.total} chamados`).join(' | ')}
         Distribuição por dia da semana no período: ${dailySummaryStr}
-        SLA Médio de Agendamento (tempo até agendar): ${avgScheduleHours} horas
-        SLA Médio de Resolução (tempo até finalizar): ${avgCompleteHours} horas
+        SLA Médio de Agendamento (tempo até agendar): ${kpis.avgScheduleHours} horas
+        SLA Médio de Resolução (tempo até finalizar): ${kpis.avgCompleteHours} horas
       `;
 
       let text = '';
