@@ -108,7 +108,43 @@ export function AnalyticsDashboard() {
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
     const uniqueCompanies = new Set(filteredVisits.filter(v => v.companyId).map(v => v.companyId)).size;
     
-    return { total, completed, completionRate, uniqueCompanies };
+    // SLA metrics
+    let totalScheduleDiff = 0;
+    let scheduleCount = 0;
+    let totalCompleteDiff = 0;
+    let completeCount = 0;
+
+    filteredVisits.forEach(v => {
+      if (v.createdAt) {
+        const created = new Date(v.createdAt).getTime();
+        
+        if (v.date && v.time) {
+          const scheduledDate = new Date(`${v.date}T${v.time}:00`).getTime();
+          if (!isNaN(scheduledDate)) {
+             // Diff in positive hours from creation to schedule
+            totalScheduleDiff += Math.abs(scheduledDate - created);
+            scheduleCount++;
+          }
+        }
+
+        if (v.completedAt) {
+          totalCompleteDiff += Math.abs(new Date(v.completedAt).getTime() - created);
+          completeCount++;
+        }
+      }
+    });
+
+    const avgScheduleHours = scheduleCount > 0 ? (totalScheduleDiff / scheduleCount) / (1000 * 60 * 60) : 0;
+    const avgCompleteHours = completeCount > 0 ? (totalCompleteDiff / completeCount) / (1000 * 60 * 60) : 0;
+
+    return { 
+      total, 
+      completed, 
+      completionRate, 
+      uniqueCompanies,
+      avgScheduleHours: avgScheduleHours.toFixed(1),
+      avgCompleteHours: avgCompleteHours.toFixed(1)
+    };
   }, [filteredVisits]);
 
   // 2. Agendamentos por Semana
@@ -428,22 +464,30 @@ export function AnalyticsDashboard() {
 
       <div id="analytics-content" className="space-y-6">
         {/* Overall KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
-            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Total de Chamados</span>
-            <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">{kpis.total}</span>
+            <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Total de Chamados</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">{kpis.total}</span>
           </div>
           <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
-            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Concluídos</span>
-            <span className="text-3xl font-extrabold text-green-600 dark:text-green-500">{kpis.completed}</span>
+            <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Concluídos</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-green-600 dark:text-green-500">{kpis.completed}</span>
           </div>
           <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
-            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Taxa de Resolução</span>
-            <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-500">{kpis.completionRate}%</span>
+            <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Taxa Resolvido</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-500">{kpis.completionRate}%</span>
           </div>
           <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
-            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Empresas Atendidas</span>
-            <span className="text-3xl font-extrabold text-purple-600 dark:text-purple-500">{kpis.uniqueCompanies}</span>
+            <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Total Empresas</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-purple-600 dark:text-purple-500">{kpis.uniqueCompanies}</span>
+          </div>
+          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+            <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">SLA Agendamento</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-500">{kpis.avgScheduleHours}h</span>
+          </div>
+          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+            <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">SLA Resolução</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-teal-600 dark:text-teal-500">{kpis.avgCompleteHours}h</span>
           </div>
         </div>
 

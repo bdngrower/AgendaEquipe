@@ -231,10 +231,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addVisit = async (visit: Omit<Visit, 'id' | 'createdAt'>) => {
     const id = uuidv4();
+    const now = new Date().toISOString();
     const newVisit: Visit = {
       ...visit,
       id,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      scheduledAt: now,
+      ...(visit.status === 'Em andamento' ? { startedAt: now } : {}),
+      ...(visit.status === 'Concluído' ? { completedAt: now } : {})
     };
     try {
       await setDoc(doc(db, 'visits', id), newVisit);
@@ -245,7 +249,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateVisit = async (id: string, updates: Partial<Visit>) => {
     try {
-      await updateDoc(doc(db, 'visits', id), updates);
+      const currentVisit = data.visits.find(v => v.id === id);
+      const enhancedUpdates = { ...updates };
+      const now = new Date().toISOString();
+
+      if (updates.status && currentVisit && currentVisit.status !== updates.status) {
+        if (updates.status === 'Em andamento' && !currentVisit.startedAt) {
+          enhancedUpdates.startedAt = now;
+        }
+        if (updates.status === 'Concluído' && !currentVisit.completedAt) {
+          enhancedUpdates.completedAt = now;
+        }
+      }
+
+      await updateDoc(doc(db, 'visits', id), enhancedUpdates);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `visits/${id}`);
     }

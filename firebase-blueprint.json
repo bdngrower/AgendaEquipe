@@ -45,7 +45,10 @@
         "notes": { "type": "string" },
         "contact": { "type": "string" },
         "ticketNumber": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "scheduledAt": { "type": "string", "format": "date-time" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["customerName", "date", "time", "status", "notes", "createdAt"]
     },

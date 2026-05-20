@@ -249,6 +249,30 @@ export function VisitModal({ isOpen, onClose, visit, defaultDate }: VisitModalPr
             placeholder="Detalhes adicionais..."
           />
         </div>
+
+        {visit && (
+          <div className="bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
+            <div className="font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Linha do Tempo (SLA)</div>
+            <div className="flex justify-between">
+              <span>Criado em:</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {visit.createdAt ? format(new Date(visit.createdAt), "dd/MM/yyyy 'às' HH:mm") : 'N/D'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Agendado para:</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {visit.date && visit.time ? format(new Date(`${visit.date}T${visit.time}:00`), "dd/MM/yyyy 'às' HH:mm") : 'N/D'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Concluído em:</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {visit.completedAt ? format(new Date(visit.completedAt), "dd/MM/yyyy 'às' HH:mm") : 'N/D'}
+              </span>
+            </div>
+          </div>
+        )}
       </form>
     </Modal>
   );

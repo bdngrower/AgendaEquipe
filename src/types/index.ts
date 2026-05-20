@@ -41,6 +41,9 @@ export interface Visit {
   contact?: string;
   ticketNumber?: string;
   createdAt: string;
+  scheduledAt?: string;
+  startedAt?: string;
+  completedAt?: string;
 }
 
 export interface AppData {

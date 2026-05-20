@@ -14,11 +14,15 @@ import {
   Clock,
   MapPin,
   Phone,
-  AlertCircle
+  AlertCircle,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '../ui';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 type FilterType = 'all' | 'week' | 'month' | 'year';
 
@@ -30,6 +34,49 @@ export function CompaniesManager() {
   const [isAdding, setIsAdding] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newCompanyContact, setNewCompanyContact] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCompanyPDF = async () => {
+    if (!selectedCompany) return;
+    setIsExporting(true);
+    try {
+      const content = document.getElementById('company-dashboard-content');
+      if (!content) throw new Error("Element not found");
+
+      const buttonContainer = document.getElementById('company-export-buttons');
+      let originalDisplay = '';
+      if (buttonContainer) {
+        originalDisplay = buttonContainer.style.display || '';
+        buttonContainer.style.display = 'none';
+      }
+
+      const canvas = await html2canvas(content, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      if (buttonContainer) {
+        buttonContainer.style.display = originalDisplay;
+      }
+
+      const imgWidth = 210; 
+      const pageHeight = 297; 
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+
+      const currentDate = format(new Date(), 'dd-MM-yyyy');
+      pdf.save(`relatorio-${selectedCompany.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${currentDate}.pdf`);
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao gerar relatorio');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const filteredCompanies = useMemo(() => {
     const term = searchTerm.toLowerCase();
@@ -107,7 +154,7 @@ export function CompaniesManager() {
           <span className="font-medium text-sm">Voltar para a lista</span>
         </button>
 
-        <div className="bg-white dark:bg-dark-surface rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm overflow-hidden mb-8">
+        <div id="company-dashboard-content" className="bg-white dark:bg-dark-surface rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm overflow-hidden mb-8">
           <div className="p-6 lg:p-8 bg-zinc-50 dark:bg-black/20 border-b border-zinc-200 dark:border-dark-border">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
@@ -131,20 +178,32 @@ export function CompaniesManager() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-dark-border shadow-sm">
-                {(['week', 'month', 'year', 'all'] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setDateFilter(f)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      dateFilter === f 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    {f === 'week' ? 'Semana' : f === 'month' ? 'Mês' : f === 'year' ? 'Ano' : 'Tudo'}
-                  </button>
-                ))}
+              <div id="company-export-buttons" className="flex items-center gap-4">
+                <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-dark-border shadow-sm">
+                  {(['week', 'month', 'year', 'all'] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setDateFilter(f)}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        dateFilter === f 
+                          ? 'bg-blue-600 text-white shadow-md' 
+                          : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      {f === 'week' ? 'Semana' : f === 'month' ? 'Mês' : f === 'year' ? 'Ano' : 'Tudo'}
+                    </button>
+                  ))}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleExportCompanyPDF}
+                  disabled={isExporting}
+                  className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-zinc-700 text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 font-medium whitespace-nowrap"
+                >
+                  {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  PDF
+                </Button>
               </div>
             </div>
             
@@ -204,6 +263,29 @@ export function CompaniesManager() {
                     <p className="text-zinc-700 dark:text-zinc-300 text-sm mb-3 font-medium line-clamp-2">
                       {visit.notes || 'Sem observações'}
                     </p>
+
+                    <div className="bg-zinc-100 dark:bg-zinc-800/80 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[10px] sm:text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1 mb-3">
+                      <div className="font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Linha do Tempo (SLA)</div>
+                      <div className="flex justify-between">
+                        <span>Criado:</span>
+                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {visit.createdAt ? format(new Date(visit.createdAt), "dd/MM/yy 'às' HH:mm") : 'N/D'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Agendado para:</span>
+                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {visit.date && visit.time ? format(new Date(`${visit.date}T${visit.time}:00`), "dd/MM/yy 'às' HH:mm") : 'N/D'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Concluído:</span>
+                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {visit.completedAt ? format(new Date(visit.completedAt), "dd/MM/yy 'às' HH:mm") : 'Pendente'}
+                        </span>
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-3 border-t border-zinc-200 dark:border-zinc-800">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />

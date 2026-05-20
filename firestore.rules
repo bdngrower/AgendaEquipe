@@ -63,6 +63,9 @@ service cloud.firestore {
         data.get('address', '') is string && data.get('address', '').size() <= 500 &&
         data.get('contact', '') is string && data.get('contact', '').size() <= 100 &&
         data.get('ticketNumber', '') is string && data.get('ticketNumber', '').size() <= 100 &&
+        data.get('scheduledAt', '') is string && data.get('scheduledAt', '').size() <= 30 &&
+        data.get('startedAt', '') is string && data.get('startedAt', '').size() <= 30 &&
+        data.get('completedAt', '') is string && data.get('completedAt', '').size() <= 30 &&
         data.get('companyId', '') is string &&
         data.get('assigneeId', '') is string;
     }
@@ -72,7 +75,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming());
       allow update: if isSignedIn() && isValidId(visitId) && isValidVisit(incoming()) &&
                     incoming().id == existing().id &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'date', 'time', 'status', 'notes', 'address', 'contact', 'assigneeId', 'companyId', 'isEmergency', 'ticketNumber']);
+                    incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'date', 'time', 'status', 'notes', 'address', 'contact', 'assigneeId', 'companyId', 'isEmergency', 'ticketNumber', 'scheduledAt', 'startedAt', 'completedAt']);
       allow delete: if isSignedIn() && isValidId(visitId);
     }
 
