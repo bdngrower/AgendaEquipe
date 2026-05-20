@@ -32,8 +32,10 @@ export function CompaniesManager() {
   const [newCompanyContact, setNewCompanyContact] = useState('');
 
   const filteredCompanies = useMemo(() => {
+    const term = searchTerm.toLowerCase();
     return companies.filter(c => 
-      c.name.toLowerCase().includes(searchTerm.toLowerCase())
+      c.name.toLowerCase().includes(term) ||
+      (c.contact && c.contact.toLowerCase().includes(term))
     );
   }, [companies, searchTerm]);
 
@@ -253,7 +255,7 @@ export function CompaniesManager() {
         </div>
         <input
           type="text"
-          placeholder="Buscar por nome da empresa..."
+          placeholder="Buscar por nome ou contato..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-12 pr-4 py-4 bg-white dark:bg-dark-surface border border-zinc-200 dark:border-dark-border rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm text-zinc-900 dark:text-zinc-100"

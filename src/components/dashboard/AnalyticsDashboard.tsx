@@ -11,7 +11,7 @@ import html2canvas from 'html2canvas';
 
 const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
 
-type DateFilterType = 'all' | 'this_year' | 'last_6_months' | 'this_month';
+type DateFilterType = 'all' | 'last_7_days' | 'this_month' | 'last_6_months' | 'this_year' | 'custom';
 
 export function AnalyticsDashboard() {
   const { visits, companies, theme } = useAppStore();
@@ -19,14 +19,20 @@ export function AnalyticsDashboard() {
   const [insights, setInsights] = useState<string>('');
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateFilterType>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   const filteredVisits = useMemo(() => {
     if (dateFilter === 'all') return visits;
     
     const now = new Date();
     return visits.filter(v => {
-      // Usar a mesma tratativa de timezone (meio-dia) para ser consistente
       const vDate = new Date(v.date + 'T12:00:00');
+      
+      if (dateFilter === 'last_7_days') {
+        const last7Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+        return vDate >= last7Days;
+      }
       if (dateFilter === 'this_year') {
         return vDate.getFullYear() === now.getFullYear();
       }
@@ -37,9 +43,17 @@ export function AnalyticsDashboard() {
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
         return vDate >= sixMonthsAgo;
       }
+      if (dateFilter === 'custom') {
+        if (customStartDate && customEndDate) {
+          const start = new Date(customStartDate + 'T00:00:00');
+          const end = new Date(customEndDate + 'T23:59:59');
+          return vDate >= start && vDate <= end;
+        }
+        return true;
+      }
       return true;
     });
-  }, [visits, dateFilter]);
+  }, [visits, dateFilter, customStartDate, customEndDate]);
 
   // 1. Top 3 Empresas (Pizza)
   const topCompaniesData = useMemo(() => {
@@ -314,6 +328,38 @@ export function AnalyticsDashboard() {
     }
   };
 
+  const handleExportCSV = () => {
+    try {
+      const headers = ['Data', 'Hora', 'Empresa', 'Status', 'Chamado', 'Contato', 'Observações'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredVisits.map(v => 
+          [
+            v.date,
+            v.time,
+            `"${(v.customerName || '').replace(/"/g, '""')}"`,
+            `"${v.status}"`,
+            `"${(v.ticketNumber || '').replace(/"/g, '""')}"`,
+            `"${(v.contact || '').replace(/"/g, '""')}"`,
+            `"${(v.notes || '').replace(/"/g, '""')}"`
+          ].join(',')
+        )
+      ].join('\n');
+
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `chamados-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao exportar CSV.");
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
@@ -322,7 +368,24 @@ export function AnalyticsDashboard() {
           <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Visão Geral</h2>
         </div>
         
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2">
+              <input 
+                type="date" 
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="bg-white dark:bg-dark-surface border border-zinc-200 dark:border-dark-border rounded-lg px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-zinc-400 text-sm">até</span>
+              <input 
+                type="date" 
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="bg-white dark:bg-dark-surface border border-zinc-200 dark:border-dark-border rounded-lg px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
           <div className="relative flex-1 sm:flex-none">
             <select
               value={dateFilter}
@@ -330,23 +393,36 @@ export function AnalyticsDashboard() {
               className="w-full sm:w-auto appearance-none bg-white dark:bg-dark-surface border border-zinc-200 dark:border-dark-border rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Todo o período</option>
+              <option value="last_7_days">Últimos 7 dias</option>
               <option value="this_month">Este mês</option>
               <option value="last_6_months">Últimos 6 meses</option>
               <option value="this_year">Este ano</option>
+              <option value="custom">Período Personalizado</option>
             </select>
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           </div>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleExportPDF}
-            disabled={isExporting}
-            className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-dark-border flex-shrink-0"
-          >
-            {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Exportar PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExportCSV}
+              className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-zinc-700 text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:border-green-300 dark:hover:border-green-700 flex-shrink-0 font-medium"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Excel (CSV)
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-dark-border flex-shrink-0 text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 font-medium"
+            >
+              {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+              PDF
+            </Button>
+          </div>
         </div>
       </div>
 
