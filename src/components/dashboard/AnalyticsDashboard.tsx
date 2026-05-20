@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line
 } from 'recharts';
 import { Button } from '../ui';
-import { Trophy, TrendingUp, Calendar, Download, Sparkles, FileText, Loader2, Filter } from 'lucide-react';
+import { Trophy, TrendingUp, Calendar, Download, Sparkles, FileText, Loader2, Filter, PieChart as PieChartIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -54,6 +54,47 @@ export function AnalyticsDashboard() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5); 
+  }, [filteredVisits]);
+
+  // Status Distribution
+  const statusData = useMemo(() => {
+    const counts: Record<string, number> = {
+      'Concluído': 0,
+      'Pendente': 0,
+      'Em andamento': 0,
+      'Confirmado': 0,
+      'Cancelado': 0
+    };
+    
+    filteredVisits.forEach(v => {
+      if (counts[v.status] !== undefined) {
+        counts[v.status]++;
+      } else {
+        counts[v.status] = 1;
+      }
+    });
+
+    const statusColors: Record<string, string> = {
+      'Concluído': '#10b981',     // green-500
+      'Pendente': '#f59e0b',      // amber-500
+      'Em andamento': '#8b5cf6',  // purple-500
+      'Confirmado': '#3b82f6',    // blue-500
+      'Cancelado': '#ef4444'      // red-500
+    };
+
+    return Object.entries(counts)
+      .filter(([_, value]) => value > 0)
+      .map(([name, value]) => ({ name, value, color: statusColors[name] || '#94a3b8' }));
+  }, [filteredVisits]);
+
+  // Overall KPIs
+  const kpis = useMemo(() => {
+    const total = filteredVisits.length;
+    const completed = filteredVisits.filter(v => v.status === 'Concluído').length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const uniqueCompanies = new Set(filteredVisits.filter(v => v.companyId).map(v => v.companyId)).size;
+    
+    return { total, completed, completionRate, uniqueCompanies };
   }, [filteredVisits]);
 
   // 2. Agendamentos por Semana
@@ -310,6 +351,26 @@ export function AnalyticsDashboard() {
       </div>
 
       <div id="analytics-content" className="space-y-6">
+        {/* Overall KPIs */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Total de Chamados</span>
+            <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">{kpis.total}</span>
+          </div>
+          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Concluídos</span>
+            <span className="text-3xl font-extrabold text-green-600 dark:text-green-500">{kpis.completed}</span>
+          </div>
+          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Taxa de Resolução</span>
+            <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-500">{kpis.completionRate}%</span>
+          </div>
+          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+            <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2">Empresas Atendidas</span>
+            <span className="text-3xl font-extrabold text-purple-600 dark:text-purple-500">{kpis.uniqueCompanies}</span>
+          </div>
+        </div>
+
         {/* Insights AI */}
         <div className="ai-card p-6 rounded-3xl text-white shadow-xl overflow-hidden relative bg-blue-600 dark:bg-blue-700">
           <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -344,6 +405,46 @@ export function AnalyticsDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Distribuição de Status */}
+          <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg print:bg-transparent">
+                <PieChartIcon className="h-5 w-5 text-blue-500" />
+              </div>
+              <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Status dos Chamados</h3>
+            </div>
+            <div className="w-full h-[300px] relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff', 
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      color: theme === 'dark' ? '#f4f4f5' : '#18181b'
+                    }}
+                    itemStyle={{ color: theme === 'dark' ? '#f4f4f5' : '#18181b' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
           {/* Top Empresas */}
           <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300">
             <div className="flex items-center gap-2 mb-6">

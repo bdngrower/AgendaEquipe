@@ -86,6 +86,14 @@ export function CompaniesManager() {
     }
   };
 
+  const companyStats = useMemo(() => {
+    return {
+      total: companyVisits.length,
+      completed: companyVisits.filter(v => v.status === 'Concluído').length,
+      pending: companyVisits.filter(v => ['Pendente', 'Em andamento'].includes(v.status)).length
+    };
+  }, [companyVisits]);
+
   if (selectedCompanyId && selectedCompany) {
     return (
       <div className="p-4 lg:p-8 max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -107,10 +115,16 @@ export function CompaniesManager() {
                 <div>
                   <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{selectedCompany.name}</h1>
                   <div className="flex items-center gap-4 mt-1">
-                    <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-sm">
-                      <Phone className="h-3.5 w-3.5" />
-                      {selectedCompany.contact || 'Sem contato'}
-                    </div>
+                    {selectedCompany.contact ? (
+                      <a href={`tel:${selectedCompany.contact.replace(/\D/g, '')}`} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium transition-colors">
+                        <Phone className="h-3.5 w-3.5" />
+                        {selectedCompany.contact}
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-sm">
+                        <Phone className="h-3.5 w-3.5" /> Sem contato
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -131,6 +145,21 @@ export function CompaniesManager() {
                 ))}
               </div>
             </div>
+            
+            <div className="grid grid-cols-3 gap-4 mt-8">
+              <div className="bg-white dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col justify-center">
+                <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-1">Total de Chamados</span>
+                <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{companyStats.total}</span>
+              </div>
+              <div className="bg-white dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col justify-center">
+                <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-1">Concluídos</span>
+                <span className="text-2xl font-bold text-green-600 dark:text-green-500">{companyStats.completed}</span>
+              </div>
+              <div className="bg-white dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col justify-center">
+                <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-1">Pendentes</span>
+                <span className="text-2xl font-bold text-amber-600 dark:text-amber-500">{companyStats.pending}</span>
+              </div>
+            </div>
           </div>
 
           <div className="p-6 lg:p-8">
@@ -139,9 +168,6 @@ export function CompaniesManager() {
                 <FileText className="h-5 w-5 text-blue-500" />
                 <h2 className="font-bold text-zinc-900 dark:text-zinc-100">Histórico de Chamados</h2>
               </div>
-              <span className="text-sm font-medium px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-full">
-                {companyVisits.length} chamados encontrados
-              </span>
             </div>
 
             {companyVisits.length > 0 ? (
@@ -152,13 +178,22 @@ export function CompaniesManager() {
                     className="p-5 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-dark-border hover:border-blue-300 dark:hover:border-blue-700 transition-all group"
                   >
                     <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                        <Calendar className="h-3 w-3" />
-                        {format(parseISO(visit.date), "dd 'de' MMMM", { locale: ptBR })}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                          <Calendar className="h-3 w-3" />
+                          {format(parseISO(visit.date), "dd 'de' MMMM", { locale: ptBR })}
+                        </div>
+                        {visit.ticketNumber && (
+                          <div className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                            Chamado: {visit.ticketNumber}
+                          </div>
+                        )}
                       </div>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                        visit.status === 'Confirmado' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        visit.status === 'Concluído' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        visit.status === 'Confirmado' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                         visit.status === 'Pendente' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                        visit.status === 'Em andamento' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
                         'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
                       }`}>
                         {visit.status}
