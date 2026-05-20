@@ -6,11 +6,15 @@ import { useAppStore } from '../../store/useAppStore';
 import { VisitCard } from './VisitCard';
 import { VisitModal } from './VisitModal';
 import { Visit, Status } from '../../types';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Button } from '../ui';
 import { cn } from '../../lib/utils';
 
-export function WeeklyBoard() {
+interface WeeklyBoardProps {
+  onToggleView?: () => void;
+}
+
+export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
   const { visits, updateVisit, moveVisit } = useAppStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isDragging, setIsDragging] = useState(false);
@@ -86,7 +90,18 @@ export function WeeklyBoard() {
     <div className="h-full flex flex-col pt-4">
       <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Agenda Semanal</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Agenda Semanal</h2>
+            {onToggleView && (
+              <button 
+                onClick={onToggleView}
+                className="p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                title="Alternar para Visão Mensal"
+              >
+                <Calendar className="w-5 h-5" />
+              </button>
+            )}
+          </div>
           <p className="text-zinc-500 dark:text-zinc-400">
             {format(days[0].date, "d 'de' MMMM", { locale: ptBR })} a {format(days[4].date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>

@@ -12,12 +12,16 @@ import {
   parseISO
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { VisitModal } from './VisitModal';
 import { Visit } from '../../types';
 
-export function MonthlyBoard() {
+interface MonthlyBoardProps {
+  onToggleView?: () => void;
+}
+
+export function MonthlyBoard({ onToggleView }: MonthlyBoardProps) {
   const { visits } = useAppStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedVisit, setSelectedVisit] = useState<Visit | undefined>(undefined);
@@ -47,9 +51,20 @@ export function MonthlyBoard() {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-dark-surface rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm p-4 mr-2 ml-2">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 capitalize">
-          {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 capitalize">
+            {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+          </h2>
+          {onToggleView && (
+            <button 
+              onClick={onToggleView}
+              className="p-1 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+              title="Alternar para Visão Semanal"
+            >
+              <Calendar className="w-5 h-5" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={handlePrevMonth} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors hidden sm:block">
             <ChevronLeft className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />

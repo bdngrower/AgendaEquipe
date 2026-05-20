@@ -237,27 +237,17 @@ function MainLayout() {
         <div className="flex-1 flex flex-col h-full overflow-hidden custom-scrollbar bg-zinc-50/50 dark:bg-dark-bg border-l border-transparent transition-colors duration-200">
           {activeTab === "agenda" ? (
             <>
-              <div className="pt-16 lg:pt-8 pb-2 px-4 md:px-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="pt-16 lg:pt-8 pb-2 px-4 md:px-2 flex flex-col gap-4">
                 <div className="hidden md:block">
                   <Summary />
                 </div>
-                <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg self-end md:self-auto w-full md:w-auto">
-                  <button
-                    onClick={() => setBoardView("week")}
-                    className={`flex-1 md:flex-none px-4 py-2 md:px-3 md:py-1.5 text-sm font-medium rounded-md transition-all ${boardView === "week" ? "bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100" : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"}`}
-                  >
-                    Visão Semanal
-                  </button>
-                  <button
-                    onClick={() => setBoardView("month")}
-                    className={`flex-1 md:flex-none px-4 py-2 md:px-3 md:py-1.5 text-sm font-medium rounded-md transition-all ${boardView === "month" ? "bg-white dark:bg-zinc-700 shadow text-zinc-900 dark:text-zinc-100" : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"}`}
-                  >
-                    Visão Mensal
-                  </button>
-                </div>
               </div>
               <div className="flex-1 overflow-hidden pb-4 px-2 pt-2 md:pt-0">
-                {boardView === "week" ? <WeeklyBoard /> : <MonthlyBoard />}
+                {boardView === "week" ? (
+                  <WeeklyBoard onToggleView={() => setBoardView("month")} />
+                ) : (
+                  <MonthlyBoard onToggleView={() => setBoardView("week")} />
+                )}
               </div>
             </>
           ) : activeTab === "reports" ? (
