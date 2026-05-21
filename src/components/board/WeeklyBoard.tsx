@@ -118,7 +118,7 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
 
       <div className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-auto scroll-smooth pb-6 px-4 md:px-6 relative custom-scrollbar">
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="flex flex-col lg:grid lg:grid-cols-5 pb-10 lg:pb-0 lg:h-full lg:min-h-[500px] gap-6 lg:gap-4 min-w-[1200px]">
+          <div className="flex flex-col lg:grid lg:grid-cols-5 pb-10 lg:pb-0 lg:h-full lg:min-h-[500px] gap-6 lg:gap-4 lg:min-w-[1200px]">
             
             {/* "Previous Week" Drop Zone - Persistent to prevent Invariant errors */}
             <div 

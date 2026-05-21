@@ -467,9 +467,9 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
           <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Visão Geral</h2>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           {dateFilter === 'custom' && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input 
                 type="date" 
                 value={customStartDate}
@@ -501,12 +501,12 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleExportCSV}
-              className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-zinc-700 text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:border-green-300 dark:hover:border-green-700 flex-shrink-0 font-medium"
+              className="w-full sm:w-auto bg-white dark:bg-dark-surface border-zinc-200 dark:border-zinc-700 text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:border-green-300 dark:hover:border-green-700 flex-shrink-0 font-medium"
             >
               <Download className="h-4 w-4 mr-2" />
               Excel (CSV)
@@ -516,7 +516,7 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
               size="sm" 
               onClick={handleExportPDF}
               disabled={isExporting}
-              className="bg-white dark:bg-dark-surface border-zinc-200 dark:border-dark-border flex-shrink-0 text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 font-medium"
+              className="w-full sm:w-auto bg-white dark:bg-dark-surface border-zinc-200 dark:border-dark-border flex-shrink-0 text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 font-medium"
             >
               {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
               PDF
@@ -527,35 +527,35 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
 
       <div id="analytics-content" className="space-y-6">
         {/* Overall KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
             <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Total de Chamados</span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">{kpis.total}</span>
+            <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">{kpis.total}</span>
           </div>
-          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+          <div className="bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
             <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Concluídos</span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-green-600 dark:text-green-500">{kpis.completed}</span>
+            <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-green-600 dark:text-green-500">{kpis.completed}</span>
           </div>
-          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+          <div className="bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
             <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Taxa Resolvido</span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-500">{kpis.completionRate}%</span>
+            <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-blue-600 dark:text-blue-500">{kpis.completionRate}%</span>
           </div>
-          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+          <div className="bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
             <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">Total Empresas</span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-purple-600 dark:text-purple-500">{kpis.uniqueCompanies}</span>
+            <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-purple-600 dark:text-purple-500">{kpis.uniqueCompanies}</span>
           </div>
-          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+          <div className="bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
             <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">SLA Agendamento</span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-500">{kpis.avgScheduleHours}h</span>
+            <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-amber-600 dark:text-amber-500">{kpis.avgScheduleHours}h</span>
           </div>
-          <div className="bg-white dark:bg-dark-surface p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
+          <div className="bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm flex flex-col justify-center">
             <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">SLA Resolução</span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-teal-600 dark:text-teal-500">{kpis.avgCompleteHours}h</span>
+            <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-teal-600 dark:text-teal-500">{kpis.avgCompleteHours}h</span>
           </div>
         </div>
 
         {/* Insights AI */}
-        <div className="ai-card p-6 rounded-3xl text-white shadow-xl overflow-hidden relative bg-blue-600 dark:bg-blue-700">
+        <div className="ai-card p-5 sm:p-6 rounded-2xl sm:rounded-3xl text-white shadow-xl overflow-hidden relative bg-blue-600 dark:bg-blue-700">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Sparkles className="h-24 w-24 rotate-12" />
           </div>
@@ -596,7 +596,7 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Status dos Chamados</h3>
             </div>
-            <div className="w-full h-[300px] relative">
+            <div className="w-full h-[250px] sm:h-[300px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -636,7 +636,7 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Top Clientes</h3>
             </div>
-            <div className="w-full h-[300px] relative">
+            <div className="w-full h-[250px] sm:h-[300px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -676,7 +676,7 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Crescimento Mensal</h3>
             </div>
-            <div className="w-full h-[300px] relative">
+            <div className="w-full h-[250px] sm:h-[300px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#27272a' : '#f1f5f9'} />
@@ -721,7 +721,7 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
             </div>
             <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Consistência Semanal</h3>
           </div>
-          <div className="w-full h-[250px] relative">
+          <div className="w-full h-[200px] sm:h-[250px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#27272a' : '#f1f5f9'} />
