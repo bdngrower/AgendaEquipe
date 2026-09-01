@@ -95,5 +95,18 @@ service cloud.firestore {
                     incoming().diff(existing()).affectedKeys().hasOnly(['name', 'contact']);
       allow delete: if isSignedIn() && isValidId(companyId);
     }
+    
+    function isValidTechnicianLocation(data) {
+      return data.keys().hasAll(['technicianId', 'latitude', 'longitude', 'timestamp']) &&
+        data.technicianId is string &&
+        data.latitude is number &&
+        data.longitude is number &&
+        data.timestamp is number;
+    }
+    
+    match /technicianLocations/{locationId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidTechnicianLocation(incoming());
+    }
   }
 }

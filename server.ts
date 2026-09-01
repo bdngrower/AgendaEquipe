@@ -44,11 +44,8 @@ async function startServer() {
     }
   });
 
-  // In-memory store for technician locations
-  const technicianLocations: Record<string, { latitude: number; longitude: number; timestamp: number; technicianId: string }> = {};
-
   // API Route to receive location from mobile app
-  app.post("/api/location", (req, res) => {
+  app.post("/api/location", async (req, res) => {
     try {
       const { latitude, longitude, timestamp, technicianId } = req.body;
       
@@ -58,14 +55,31 @@ async function startServer() {
 
       const techId = technicianId || "tech_mobile";
       
-      technicianLocations[techId] = {
+      // Import Firebase dynamically or read from config
+      const fs = await import("fs");
+      const pathModule = await import("path");
+      const { initializeApp, getApps } = await import("firebase/app");
+      const { getFirestore, doc, setDoc } = await import("firebase/firestore");
+      
+      const configPath = pathModule.resolve(process.cwd(), "firebase-applet-config.json");
+      const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      
+      let appInstance;
+      if (!getApps().length) {
+        appInstance = initializeApp(firebaseConfig);
+      } else {
+        appInstance = getApps()[0];
+      }
+      const db = getFirestore(appInstance, firebaseConfig.firestoreDatabaseId);
+
+      await setDoc(doc(db, "technicianLocations", techId), {
         latitude,
         longitude,
         timestamp: timestamp || Date.now(),
         technicianId: techId
-      };
+      });
       
-      res.json({ success: true, message: "Location updated" });
+      res.json({ success: true, message: "Location updated in Firebase" });
     } catch (error) {
       console.error("Location POST Error:", error);
       res.status(500).json({ error: "Failed to update location" });
@@ -73,8 +87,35 @@ async function startServer() {
   });
 
   // API Route to fetch latest locations for the dashboard
-  app.get("/api/location", (req, res) => {
-    res.json({ locations: Object.values(technicianLocations) });
+  // (We'll keep this as a fallback, though the frontend should now use Firebase onSnapshot)
+  app.get("/api/location", async (req, res) => {
+    try {
+      const fs = await import("fs");
+      const pathModule = await import("path");
+      const { initializeApp, getApps } = await import("firebase/app");
+      const { getFirestore, collection, getDocs } = await import("firebase/firestore");
+      
+      const configPath = pathModule.resolve(process.cwd(), "firebase-applet-config.json");
+      const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      
+      let appInstance;
+      if (!getApps().length) {
+        appInstance = initializeApp(firebaseConfig);
+      } else {
+        appInstance = getApps()[0];
+      }
+      const db = getFirestore(appInstance, firebaseConfig.firestoreDatabaseId);
+      
+      const querySnapshot = await getDocs(collection(db, "technicianLocations"));
+      const locations = [];
+      querySnapshot.forEach((doc) => {
+        locations.push(doc.data());
+      });
+      
+      res.json({ locations });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch locations" });
+    }
   });
 
   // Vite middleware for development

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { db } from '../../lib/firebase';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 
 interface TechLocation {
   technicianId: string;
@@ -15,23 +17,20 @@ export function TechRadar() {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  const fetchLocations = async () => {
-    try {
-      const response = await fetch('/api/location');
-      const data = await response.json();
-      setLocations(data.locations || []);
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Failed to fetch locations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchLocations();
-    const interval = setInterval(fetchLocations, 5000); // Poll every 5s
-    return () => clearInterval(interval);
+    const q = query(collection(db, 'technicianLocations'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => doc.data() as TechLocation);
+      setLocations(docs);
+      setLastUpdate(new Date());
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching real-time locations:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return (
