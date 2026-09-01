@@ -109,5 +109,18 @@ service cloud.firestore {
       allow create, update: if isSignedIn() && isValidTechnicianLocation(incoming());
       allow delete: if isSignedIn();
     }
+    
+    function isValidTrackingLog(data) {
+      return data.keys().hasAll(['technicianId', 'reason', 'timestamp', 'action']) &&
+        data.technicianId is string &&
+        data.reason is string &&
+        data.timestamp is number &&
+        data.action is string;
+    }
+    
+    match /trackingLogs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidTrackingLog(incoming());
+    }
   }
 }

@@ -86,6 +86,49 @@ async function startServer() {
     }
   });
 
+  // API Route to stop tracking
+  app.post("/api/stop-tracking", async (req, res) => {
+    try {
+      const { technicianId, reason, timestamp } = req.body;
+      
+      if (!technicianId) {
+        return res.status(400).json({ error: "Missing technicianId" });
+      }
+      
+      const fs = await import("fs");
+      const pathModule = await import("path");
+      const { initializeApp, getApps } = await import("firebase/app");
+      const { getFirestore, doc, deleteDoc, collection, addDoc } = await import("firebase/firestore");
+      
+      const configPath = pathModule.resolve(process.cwd(), "firebase-applet-config.json");
+      const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      
+      let appInstance;
+      if (!getApps().length) {
+        appInstance = initializeApp(firebaseConfig);
+      } else {
+        appInstance = getApps()[0];
+      }
+      const db = getFirestore(appInstance, firebaseConfig.firestoreDatabaseId);
+
+      // Remove from real-time radar
+      await deleteDoc(doc(db, "technicianLocations", technicianId));
+      
+      // Log the reason
+      await addDoc(collection(db, "trackingLogs"), {
+        technicianId,
+        reason: reason || "Não informado",
+        timestamp: timestamp || Date.now(),
+        action: "STOP_TRACKING"
+      });
+      
+      res.json({ success: true, message: "Tracking stopped successfully" });
+    } catch (error) {
+      console.error("Stop Tracking POST Error:", error);
+      res.status(500).json({ error: "Failed to stop tracking" });
+    }
+  });
+
   // API Route to fetch latest locations for the dashboard
   // (We'll keep this as a fallback, though the frontend should now use Firebase onSnapshot)
   app.get("/api/location", async (req, res) => {

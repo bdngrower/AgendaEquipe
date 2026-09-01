@@ -36,6 +36,7 @@ export function TechRadar() {
   }, []);
 
   const handleDelete = async (e: React.MouseEvent, techId: string) => {
+    e.preventDefault();
     e.stopPropagation();
     if (window.confirm(`Deseja remover o técnico ${techId} do radar?`)) {
       try {
