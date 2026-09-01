@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, RefreshCw } from 'lucide-react';
+import { MapPin, Navigation, RefreshCw, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { db } from '../../lib/firebase';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, deleteDoc, doc } from 'firebase/firestore';
+import { cn } from '../../lib/utils';
 
 interface TechLocation {
   technicianId: string;
@@ -16,6 +17,7 @@ export function TechRadar() {
   const [locations, setLocations] = useState<TechLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'technicianLocations'));
@@ -32,6 +34,23 @@ export function TechRadar() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleDelete = async (e: React.MouseEvent, techId: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Deseja remover o técnico ${techId} do radar?`)) {
+      try {
+        await deleteDoc(doc(db, 'technicianLocations', techId));
+        if (selectedTechId === techId) {
+          setSelectedTechId(null);
+        }
+      } catch (error) {
+        console.error("Erro ao remover técnico:", error);
+        alert("Não foi possível remover o técnico. Verifique suas permissões.");
+      }
+    }
+  };
+
+  const displayLocation = locations.find(l => l.technicianId === selectedTechId) || locations[0];
 
   return (
     <div className="h-full flex flex-col p-4 md:p-6 lg:p-8 bg-zinc-50 dark:bg-zinc-950">
@@ -67,25 +86,39 @@ export function TechRadar() {
               </p>
             ) : (
               locations.map((loc) => (
-                <div key={loc.technicianId} className="p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex flex-col gap-2">
+                <div 
+                  key={loc.technicianId} 
+                  onClick={() => setSelectedTechId(loc.technicianId)}
+                  className={cn(
+                    "p-3 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all hover:shadow-md",
+                    (selectedTechId === loc.technicianId || (!selectedTechId && locations[0]?.technicianId === loc.technicianId))
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700" 
+                      : "border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 hover:border-blue-300 dark:hover:border-blue-800"
+                  )}
+                >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-zinc-900 dark:text-zinc-100">{loc.technicianId}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                      Online
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        Online
+                      </span>
+                      <button 
+                        onClick={(e) => handleDelete(e, loc.technicianId)}
+                        className="text-zinc-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                        title="Remover Técnico"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="text-xs text-zinc-500 dark:text-zinc-400 flex flex-col gap-1">
                     <span>Visto em: {format(new Date(loc.timestamp), "dd/MM 'às' HH:mm:ss")}</span>
-                    <a 
-                      href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline flex items-center gap-1"
-                    >
-                      <MapPin className="h-3 w-3" /> Ver no Google Maps
-                    </a>
+                    <span className="text-blue-500 flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3" /> 
+                      {loc.latitude.toFixed(5)}, {loc.longitude.toFixed(5)}
+                    </span>
                   </div>
                 </div>
               ))
@@ -95,7 +128,7 @@ export function TechRadar() {
 
         {/* Map Panel */}
         <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-2 overflow-hidden flex flex-col relative h-[400px] lg:h-auto">
-          {locations.length > 0 ? (
+          {displayLocation ? (
             <iframe 
               title="Radar Map"
               width="100%" 
@@ -105,7 +138,7 @@ export function TechRadar() {
               marginHeight={0} 
               marginWidth={0} 
               className="rounded-xl w-full h-full flex-1"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${locations[0].longitude - 0.05}%2C${locations[0].latitude - 0.05}%2C${locations[0].longitude + 0.05}%2C${locations[0].latitude + 0.05}&layer=mapnik&marker=${locations[0].latitude}%2C${locations[0].longitude}`}
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${displayLocation.longitude - 0.005}%2C${displayLocation.latitude - 0.005}%2C${displayLocation.longitude + 0.005}%2C${displayLocation.latitude + 0.005}&layer=mapnik&marker=${displayLocation.latitude}%2C${displayLocation.longitude}`}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-zinc-100 dark:border-zinc-800">
@@ -113,16 +146,6 @@ export function TechRadar() {
               <p className="text-zinc-500 font-medium">Aguardando sinais de GPS...</p>
             </div>
           )}
-          
-          <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-lg text-xs max-w-xs">
-            <h4 className="font-bold mb-1 text-zinc-900 dark:text-zinc-100">API de Rastreamento (POST)</h4>
-            <code className="text-[10px] break-all bg-zinc-100 dark:bg-zinc-950 p-1.5 rounded text-blue-600 dark:text-blue-400 block mb-2 font-mono">
-              /api/location
-            </code>
-            <p className="text-zinc-500">
-              Payload: {`{"latitude": x, "longitude": y, "timestamp": z, "technicianId": "ID"}`}
-            </p>
-          </div>
         </div>
       </div>
     </div>

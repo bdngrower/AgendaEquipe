@@ -106,7 +106,8 @@ service cloud.firestore {
     
     match /technicianLocations/{locationId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidTechnicianLocation(incoming());
+      allow create, update: if isSignedIn() && isValidTechnicianLocation(incoming());
+      allow delete: if isSignedIn();
     }
   }
 }
