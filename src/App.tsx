@@ -12,6 +12,8 @@ import { Summary } from "./components/dashboard/Summary";
 import { AnalyticsDashboard } from "./components/dashboard/AnalyticsDashboard";
 import { CompaniesManager } from "./components/companies/CompaniesManager";
 import { TaskNotificationOverlay } from "./components/reminders/TaskNotificationOverlay";
+import { TechApp } from "./components/tech-app/TechApp";
+import { TechRadar } from "./components/tech-radar/TechRadar";
 import {
   Calendar,
   CheckSquare,
@@ -26,6 +28,8 @@ import {
   LayoutDashboard,
   ListTodo,
   Building2,
+  Smartphone,
+  Navigation,
 } from "lucide-react";
 import { Button } from "./components/ui";
 
@@ -33,7 +37,7 @@ function MainLayout() {
   const { currentUser, authReady, dataLoaded, theme, setTheme } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "agenda" | "reports" | "companies"
+    "agenda" | "reports" | "companies" | "techApp" | "techRadar"
   >("agenda");
   const [boardView, setBoardView] = useState<"week" | "month">("week");
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
@@ -200,6 +204,34 @@ function MainLayout() {
               <Building2 className="h-5 w-5" />
               <span>Empresas</span>
             </button>
+            <button
+              onClick={() => {
+                setActiveTab("techApp");
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 ${
+                activeTab === "techApp"
+                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
+                  : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface-hover"
+              }`}
+            >
+              <Smartphone className="h-5 w-5" />
+              <span>Modo Técnico</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("techRadar");
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 ${
+                activeTab === "techRadar"
+                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
+                  : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-dark-surface-hover"
+              }`}
+            >
+              <Navigation className="h-5 w-5" />
+              <span>Radar de Técnicos</span>
+            </button>
           </div>
 
           <div className="flex-1 overflow-hidden">
@@ -263,6 +295,14 @@ function MainLayout() {
                 </div>
                 <AnalyticsDashboard />
               </div>
+            </div>
+          ) : activeTab === "techApp" ? (
+            <div className="flex-1 overflow-y-auto w-full bg-zinc-50 dark:bg-zinc-950">
+              <TechApp />
+            </div>
+          ) : activeTab === "techRadar" ? (
+            <div className="flex-1 overflow-y-auto w-full bg-zinc-50 dark:bg-zinc-950">
+              <TechRadar />
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto pt-16 lg:pt-8">

@@ -44,6 +44,39 @@ async function startServer() {
     }
   });
 
+  // In-memory store for technician locations
+  const technicianLocations: Record<string, { latitude: number; longitude: number; timestamp: number; technicianId: string }> = {};
+
+  // API Route to receive location from mobile app
+  app.post("/api/location", (req, res) => {
+    try {
+      const { latitude, longitude, timestamp, technicianId } = req.body;
+      
+      if (latitude === undefined || longitude === undefined) {
+        return res.status(400).json({ error: "Missing latitude or longitude" });
+      }
+
+      const techId = technicianId || "tech_mobile";
+      
+      technicianLocations[techId] = {
+        latitude,
+        longitude,
+        timestamp: timestamp || Date.now(),
+        technicianId: techId
+      };
+      
+      res.json({ success: true, message: "Location updated" });
+    } catch (error) {
+      console.error("Location POST Error:", error);
+      res.status(500).json({ error: "Failed to update location" });
+    }
+  });
+
+  // API Route to fetch latest locations for the dashboard
+  app.get("/api/location", (req, res) => {
+    res.json({ locations: Object.values(technicianLocations) });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

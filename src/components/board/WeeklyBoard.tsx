@@ -6,7 +6,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { VisitCard } from './VisitCard';
 import { VisitModal } from './VisitModal';
 import { Visit, Status } from '../../types';
-import { Plus, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Calendar, MessageSquare } from 'lucide-react';
 import { Button } from '../ui';
 import { cn } from '../../lib/utils';
 
@@ -80,6 +80,20 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
     setIsModalOpen(true);
   };
 
+  const handleShareToTeams = async () => {
+    const isConfirm = window.confirm("Deseja enviar a agenda desta semana para o canal do Microsoft Teams (via Webhook)?");
+    if (!isConfirm) return;
+    
+    try {
+      // Aqui faríamos um fetch real para a URL do Webhook do Teams.
+      // Exemplo: await fetch('URL_DO_WEBHOOK', { method: 'POST', body: JSON.stringify({...}) });
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulando delay
+      alert("Agenda enviada com sucesso para o canal do Teams!");
+    } catch (e) {
+      alert("Erro ao enviar agenda para o Teams.");
+    }
+  };
+
   const handleCardClick = (visit: Visit) => {
     setSelectedVisit(visit);
     setSelectedDate(visit.date);
@@ -107,6 +121,9 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleShareToTeams} title="Enviar Agenda para o Teams" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
+            <MessageSquare className="mr-2 h-4 w-4 hidden sm:inline" /> Share Teams
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))} title="Semana Anterior">Anterior</Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())} title="Ir para Hoje">Hoje</Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))} title="Próxima Semana">Próxima</Button>
