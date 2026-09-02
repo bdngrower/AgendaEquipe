@@ -9,7 +9,7 @@ import { Visit, Status } from '../../types';
 import { Plus, ChevronLeft, ChevronRight, Calendar, Share2, Image as ImageIcon, FileText, ChevronDown } from 'lucide-react';
 import { Button } from '../ui';
 import { cn } from '../../lib/utils';
-import { toBlob } from 'html-to-image';
+import html2canvas from 'html2canvas';
 
 interface WeeklyBoardProps {
   onToggleView?: () => void;
@@ -20,6 +20,7 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isDragging, setIsDragging] = useState(false);
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,48 +136,56 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
 
   const handleShareImage = async (type: 'week' | 'day') => {
     setIsShareMenuOpen(false);
-    let elementId = 'weekly-board-container';
-    
-    if (type === 'day') {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      elementId = `day-column-${today}`;
-    }
+    setIsCapturing(true);
 
-    const element = document.getElementById(elementId);
-    if (!element) {
-      alert("Não foi possível encontrar a área para recortar (o dia de hoje pode não estar na semana atual).");
-      return;
-    }
-
-    try {
-      const blob = await toBlob(element, {
-        backgroundColor: document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff',
-        pixelRatio: 2,
-      });
-
-      if (!blob) throw new Error("Falha ao gerar o arquivo de imagem.");
-
-      const file = new File([blob], `agenda-${type}.png`, { type: 'image/png' });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            title: 'Agenda',
-            files: [file]
-          });
-        } catch (error) {
-          if ((error as Error).name !== 'AbortError') {
-             downloadBlob(blob, `agenda-${type}.png`);
-          }
-        }
-      } else {
-        downloadBlob(blob, `agenda-${type}.png`);
-        alert("A imagem foi baixada pois o navegador não suporta envio direto de imagens.");
+    setTimeout(async () => {
+      let elementId = type === 'week' ? 'weekly-board-content' : `day-column-${format(new Date(), 'yyyy-MM-dd')}`;
+      
+      const element = document.getElementById(elementId);
+      if (!element) {
+        setIsCapturing(false);
+        alert("Não foi possível encontrar a área para recortar (o dia de hoje pode não estar na semana atual).");
+        return;
       }
-    } catch (error: any) {
-      console.error("Erro ao gerar imagem", error);
-      alert("Erro ao recortar a tela: " + error.message);
-    }
+
+      try {
+        const canvas = await html2canvas(element, {
+          backgroundColor: document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          windowHeight: element.scrollHeight,
+          height: element.scrollHeight
+        });
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) throw new Error("Falha ao gerar o arquivo de imagem.");
+
+          const file = new File([blob], `agenda-${type}.png`, { type: 'image/png' });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                title: 'Agenda',
+                files: [file]
+              });
+            } catch (error) {
+              if ((error as Error).name !== 'AbortError') {
+                 downloadBlob(blob, `agenda-${type}.png`);
+              }
+            }
+          } else {
+            downloadBlob(blob, `agenda-${type}.png`);
+            alert("A imagem foi baixada pois o navegador não suporta envio direto de imagens.");
+          }
+          setIsCapturing(false);
+        }, 'image/png');
+      } catch (error: any) {
+        console.error("Erro ao gerar imagem", error);
+        alert("Erro ao recortar a tela: " + error.message);
+        setIsCapturing(false);
+      }
+    }, 300); // 300ms delay to allow React to remove scrollbars and let containers expand
   };
 
   const handleCardClick = (visit: Visit) => {
@@ -246,9 +255,16 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
         </div>
       </div>
 
-      <div id="weekly-board-container" className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-auto scroll-smooth pb-6 px-4 md:px-6 relative custom-scrollbar">
+      <div className={cn(
+        "flex-1 overflow-x-auto scroll-smooth pb-6 px-4 md:px-6 relative custom-scrollbar",
+        !isCapturing && "overflow-y-auto lg:overflow-y-hidden"
+      )}>
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="flex flex-col lg:grid lg:grid-cols-5 pb-10 lg:pb-0 lg:h-full lg:min-h-[500px] gap-6 lg:gap-4 lg:min-w-[1200px]">
+          <div id="weekly-board-content" className={cn(
+            "flex flex-col lg:grid lg:grid-cols-5 gap-6 lg:gap-4 lg:min-w-[1200px]",
+            !isCapturing && "pb-10 lg:pb-0 lg:h-full lg:min-h-[500px]",
+            isCapturing && "bg-zinc-50 dark:bg-[#09090b] p-4 rounded-xl w-max min-w-full"
+          )}>
             
             {/* "Previous Week" Drop Zone - Persistent to prevent Invariant errors */}
             <div 
@@ -285,7 +301,11 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
               const isToday = isSameDay(day.date, new Date());
 
               return (
-                <div id={`day-column-${day.dateString}`} key={day.dateString} className="flex lg:h-full w-full lg:w-auto flex-col rounded-2xl bg-white dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
+                <div id={`day-column-${day.dateString}`} key={day.dateString} className={cn(
+                  "flex w-full lg:w-auto flex-col rounded-2xl bg-white dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm transition-all duration-200",
+                  !isCapturing && "lg:h-full overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700",
+                  isCapturing && "h-auto overflow-visible shrink-0"
+                )}>
                   <div className={cn(
                     "p-3 xl:p-4 border-b border-zinc-200/80 dark:border-dark-border transition-colors",
                     isToday ? "bg-blue-50/80 dark:bg-blue-950/20" : "bg-white dark:bg-transparent"
@@ -312,7 +332,9 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={cn(
-                          "flex-1 lg:overflow-y-auto min-h-[250px] p-2 transition-colors custom-scrollbar",
+                          "flex-1 p-2 transition-colors custom-scrollbar",
+                          !isCapturing && "lg:overflow-y-auto min-h-[250px]",
+                          isCapturing && "overflow-visible h-auto",
                           snapshot.isDraggingOver ? "bg-blue-50/50 dark:bg-blue-950/10" : "bg-white dark:bg-dark-surface"
                         )}
                       >
