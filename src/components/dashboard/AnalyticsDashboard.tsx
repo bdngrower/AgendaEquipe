@@ -5,9 +5,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line
 } from 'recharts';
 import { Button } from '../ui';
-import { Trophy, TrendingUp, Calendar, Download, Sparkles, FileText, Loader2, Filter, PieChart as PieChartIcon } from 'lucide-react';
+import { Trophy, TrendingUp, Calendar, Download, Sparkles, FileText, Loader2, Filter, PieChart as PieChartIcon, History } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { db } from '../../lib/firebase';
+import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 
 const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
 
@@ -21,6 +23,16 @@ export function AnalyticsDashboard() {
   const [dateFilter, setDateFilter] = useState<DateFilterType>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [trackingLogs, setTrackingLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'trackingLogs'), orderBy('timestamp', 'desc'), limit(15));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTrackingLogs(logs);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const filteredVisits = useMemo(() => {
     if (dateFilter === 'all') return visits;
@@ -757,6 +769,56 @@ Apenas o Markdown listando os insights com o formato acima, perfeitamente limpo.
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Histórico de Desligamentos de GPS */}
+        <div className="bg-white dark:bg-dark-surface p-6 rounded-2xl border border-zinc-200 dark:border-dark-border shadow-sm print:shadow-none print:border-zinc-300">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg print:bg-transparent">
+              <History className="h-5 w-5 text-red-500" />
+            </div>
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Histórico de Desligamento de GPS (Auditoria)</h3>
+          </div>
+          
+          <div className="overflow-x-auto">
+            {trackingLogs.length > 0 ? (
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-50 dark:bg-zinc-900/50 border-y border-zinc-200 dark:border-dark-border">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Data/Hora</th>
+                    <th className="px-4 py-3 font-medium">Técnico</th>
+                    <th className="px-4 py-3 font-medium">Ação</th>
+                    <th className="px-4 py-3 font-medium">Motivo Informado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200 dark:divide-dark-border">
+                  {trackingLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/30 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-400">
+                        {new Date(log.timestamp).toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                        {log.technicianId}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                          {log.action === 'STOP_TRACKING' ? 'Rastreio Parado' : log.action}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                        {log.reason}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+                Nenhum registro de parada de GPS encontrado.
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
