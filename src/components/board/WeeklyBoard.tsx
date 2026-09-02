@@ -9,7 +9,7 @@ import { Visit, Status } from '../../types';
 import { Plus, ChevronLeft, ChevronRight, Calendar, Share2, Image as ImageIcon, FileText, ChevronDown } from 'lucide-react';
 import { Button } from '../ui';
 import { cn } from '../../lib/utils';
-import html2canvas from 'html2canvas';
+import { toBlob } from 'html-to-image';
 
 interface WeeklyBoardProps {
   onToggleView?: () => void;
@@ -149,35 +149,33 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
     }
 
     try {
-      const canvas = await html2canvas(element, {
+      const blob = await toBlob(element, {
         backgroundColor: document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff',
-        scale: 2,
-        useCORS: true,
+        pixelRatio: 2,
       });
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const file = new File([blob], `agenda-${type}.png`, { type: 'image/png' });
+      if (!blob) throw new Error("Falha ao gerar o arquivo de imagem.");
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              title: 'Agenda',
-              files: [file]
-            });
-          } catch (error) {
-            if ((error as Error).name !== 'AbortError') {
-               downloadBlob(blob, `agenda-${type}.png`);
-            }
+      const file = new File([blob], `agenda-${type}.png`, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: 'Agenda',
+            files: [file]
+          });
+        } catch (error) {
+          if ((error as Error).name !== 'AbortError') {
+             downloadBlob(blob, `agenda-${type}.png`);
           }
-        } else {
-          downloadBlob(blob, `agenda-${type}.png`);
-          alert("A imagem foi baixada pois o navegador não suporta envio direto de imagens.");
         }
-      }, 'image/png');
-    } catch (error) {
+      } else {
+        downloadBlob(blob, `agenda-${type}.png`);
+        alert("A imagem foi baixada pois o navegador não suporta envio direto de imagens.");
+      }
+    } catch (error: any) {
       console.error("Erro ao gerar imagem", error);
-      alert("Erro ao recortar a tela.");
+      alert("Erro ao recortar a tela: " + error.message);
     }
   };
 
