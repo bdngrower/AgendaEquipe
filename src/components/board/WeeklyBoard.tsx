@@ -6,9 +6,10 @@ import { useAppStore } from '../../store/useAppStore';
 import { VisitCard } from './VisitCard';
 import { VisitModal } from './VisitModal';
 import { Visit, Status } from '../../types';
-import { Plus, ChevronLeft, ChevronRight, Calendar, Share2 } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Calendar, Share2, Image as ImageIcon, FileText, ChevronDown } from 'lucide-react';
 import { Button } from '../ui';
 import { cn } from '../../lib/utils';
+import html2canvas from 'html2canvas';
 
 interface WeeklyBoardProps {
   onToggleView?: () => void;
@@ -18,6 +19,7 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
   const { visits, updateVisit, moveVisit } = useAppStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isDragging, setIsDragging] = useState(false);
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -80,7 +82,8 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
     setIsModalOpen(true);
   };
 
-  const handleShareAgenda = async () => {
+  const handleShareText = async () => {
+    setIsShareMenuOpen(false);
     // Formatar agenda da semana
     let agendaText = `📅 *Agenda: ${format(days[0].date, "dd/MM")} a ${format(days[4].date, "dd/MM")}*\n\n`;
     
@@ -119,6 +122,65 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
     }
   };
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShareImage = async (type: 'week' | 'day') => {
+    setIsShareMenuOpen(false);
+    let elementId = 'weekly-board-container';
+    
+    if (type === 'day') {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      elementId = `day-column-${today}`;
+    }
+
+    const element = document.getElementById(elementId);
+    if (!element) {
+      alert("Não foi possível encontrar a área para recortar (o dia de hoje pode não estar na semana atual).");
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(element, {
+        backgroundColor: document.documentElement.classList.contains('dark') ? '#09090b' : '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `agenda-${type}.png`, { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: 'Agenda',
+              files: [file]
+            });
+          } catch (error) {
+            if ((error as Error).name !== 'AbortError') {
+               downloadBlob(blob, `agenda-${type}.png`);
+            }
+          }
+        } else {
+          downloadBlob(blob, `agenda-${type}.png`);
+          alert("A imagem foi baixada pois o navegador não suporta envio direto de imagens.");
+        }
+      }, 'image/png');
+    } catch (error) {
+      console.error("Erro ao gerar imagem", error);
+      alert("Erro ao recortar a tela.");
+    }
+  };
+
   const handleCardClick = (visit: Visit) => {
     setSelectedVisit(visit);
     setSelectedDate(visit.date);
@@ -146,9 +208,37 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleShareAgenda} title="Compartilhar Agenda" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
-            <Share2 className="mr-2 h-4 w-4 hidden sm:inline" /> Compartilhar
-          </Button>
+          <div className="relative">
+            <Button variant="outline" size="sm" onClick={() => setIsShareMenuOpen(!isShareMenuOpen)} title="Compartilhar Agenda" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
+              <Share2 className="mr-2 h-4 w-4 hidden sm:inline" /> Compartilhar <ChevronDown className="ml-1 h-3 w-3 inline" />
+            </Button>
+            {isShareMenuOpen && (
+              <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 py-1 z-50">
+                <button 
+                  onClick={() => handleShareImage('week')}
+                  className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 flex items-center gap-2 transition-colors"
+                >
+                  <ImageIcon className="w-4 h-4 text-indigo-500" />
+                  Imagem: Semana Completa
+                </button>
+                <button 
+                  onClick={() => handleShareImage('day')}
+                  className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 flex items-center gap-2 transition-colors"
+                >
+                  <ImageIcon className="w-4 h-4 text-emerald-500" />
+                  Imagem: Apenas Hoje
+                </button>
+                <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
+                <button 
+                  onClick={handleShareText}
+                  className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 flex items-center gap-2 transition-colors"
+                >
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  Copiar Texto (Semana)
+                </button>
+              </div>
+            )}
+          </div>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))} title="Semana Anterior">Anterior</Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())} title="Ir para Hoje">Hoje</Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))} title="Próxima Semana">Próxima</Button>
@@ -158,7 +248,7 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-auto scroll-smooth pb-6 px-4 md:px-6 relative custom-scrollbar">
+      <div id="weekly-board-container" className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-auto scroll-smooth pb-6 px-4 md:px-6 relative custom-scrollbar">
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <div className="flex flex-col lg:grid lg:grid-cols-5 pb-10 lg:pb-0 lg:h-full lg:min-h-[500px] gap-6 lg:gap-4 lg:min-w-[1200px]">
             
@@ -197,7 +287,7 @@ export function WeeklyBoard({ onToggleView }: WeeklyBoardProps) {
               const isToday = isSameDay(day.date, new Date());
 
               return (
-                <div key={day.dateString} className="flex lg:h-full w-full lg:w-auto flex-col rounded-2xl bg-white dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
+                <div id={`day-column-${day.dateString}`} key={day.dateString} className="flex lg:h-full w-full lg:w-auto flex-col rounded-2xl bg-white dark:bg-dark-surface border border-zinc-200/80 dark:border-dark-border shadow-sm overflow-hidden transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700">
                   <div className={cn(
                     "p-3 xl:p-4 border-b border-zinc-200/80 dark:border-dark-border transition-colors",
                     isToday ? "bg-blue-50/80 dark:bg-blue-950/20" : "bg-white dark:bg-transparent"
